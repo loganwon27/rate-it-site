@@ -19,3 +19,4 @@ a { color: var(--gold); }
 ul { padding-left: 22px; }
 footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 @media (max-width: 420px) { nav { gap: 12px; font-size: 14px; } header { gap: 10px; } }
+.cta { display: inline-block; background: #fff; color: #000; font-weight: 700; padding: 14px 22px; border-radius: 999px; text-decoration: none; margin: -12px 0 28px; }
