@@ -36,6 +36,8 @@ const KNOWN = [
   ['rate_first', 'Rate it to see the results.'],
   ['account_restricted', 'Your account has been restricted for breaking the community rules.'],
   ['not_allowed', "You don't have permission to do that."],
+  ['error sending', "We couldn't send the email. Try again in a few minutes."],
+  ['over_email_send_rate_limit', 'Too many emails sent. Try again in a few minutes.'],
   ['invalid login credentials', 'Wrong email or password.'],
   ['email not confirmed', 'Confirm your email first — check your inbox.'],
   ['user already registered', 'An account with this email already exists.'],
