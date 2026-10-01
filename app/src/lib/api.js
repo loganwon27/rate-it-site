@@ -72,7 +72,8 @@ export async function deleteAccount() {
     if (paths.length) await db.storage.from(bucket).remove(paths);
   }
   unwrap(await db.rpc('delete_account'));
-  await signOut();
+  // The account is gone on the server, so only clear this device's session.
+  await db.auth.signOut({ scope: 'local' });
 }
 
 // ---------- Profiles & settings ----------
