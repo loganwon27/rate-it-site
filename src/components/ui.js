@@ -23,6 +23,8 @@ export function Icon({ name, size = 22 }) {
     shield: 'M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6zM9 12l2 2 4-4',
     star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z',
     down: 'M12 5v14M6 13l6 6 6-6',
+    share: 'M12 4v11M8 8l4-4 4 4M5 13v6h14v-6',
+    shield2: 'M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6z',
   };
   const filled = name === 'star';
   return html`<svg class="icon" width=${size} height=${size} viewBox="0 0 24 24" aria-hidden="true"
@@ -120,4 +122,17 @@ export function Toasts() {
     };
   }, []);
   return message ? html`<div class="toast" role="status">${message}</div>` : null;
+}
+
+/** True when the window has room for the side-by-side desktop layouts (sidebar + photo + panel). */
+const WIDE_QUERY = '(min-width: 1100px)';
+export function useWide() {
+  const [wide, setWide] = useState(() => window.matchMedia(WIDE_QUERY).matches);
+  useEffect(() => {
+    const query = window.matchMedia(WIDE_QUERY);
+    const onChange = () => setWide(query.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return wide;
 }

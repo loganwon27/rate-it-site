@@ -304,15 +304,23 @@ function RatersModal({ post, onClose }) {
 }
 
 export function CommentsModal({ post, onClose, onCountChange }) {
+  return html`<${Modal} title="Comments" onClose=${onClose}>
+    <${CommentsPanel} post=${post} onCountChange=${onCountChange} onNavigate=${onClose} />
+  </${Modal}>`;
+}
+
+/** The comment list and "Add a comment" box. In a modal on phones, beside the post on wide screens. */
+export function CommentsPanel({ post, onCountChange, onNavigate, inline = false }) {
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [reporting, setReporting] = useState(null);
+  const listRef = useRef(null);
   const myId = getState().profile?.id;
 
   const load = () => api.comments(post.id).then(setItems).catch((e) => setError(describeError(e)));
-  useEffect(() => { load(); }, []);
+  useEffect(() => { setItems(null); load(); }, [post.id]);
 
   async function send(e) {
     e.preventDefault();
@@ -324,6 +332,8 @@ export function CommentsModal({ post, onClose, onCountChange }) {
       setItems([...(items || []), comment]);
       setDraft('');
       onCountChange?.(1);
+      // Show your new comment, even at the bottom of a long thread.
+      requestAnimationFrame(() => listRef.current?.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
     } catch (err) {
       toast(describeError(err));
     }
@@ -340,14 +350,14 @@ export function CommentsModal({ post, onClose, onCountChange }) {
     }
   }
 
-  return html`<${Modal} title="Comments" onClose=${onClose}>
-    <div class="comments">
+  return html`<div class=${`comments-panel ${inline ? 'inline' : ''}`}>
+    <div class="comments" ref=${listRef}>
       ${error ? html`<p class="error">${error}</p>` : !items ? html`<${Spinner} />` : items.length === 0
         ? html`<p class="muted center">No comments yet. Start the conversation.</p>`
         : items.map((c) => html`<div class="comment">
             <${Avatar} url=${api.avatarUrl(c.author?.avatar_path)} name=${c.author?.username} size=${32} />
             <div class="comment-body">
-              <div><a href=${`#/u/${c.user_id}`} onClick=${onClose}><strong>@${c.author?.username ?? 'someone'}</strong></a>
+              <div><a href=${`#/u/${c.user_id}`} onClick=${onNavigate}><strong>@${c.author?.username ?? 'someone'}</strong></a>
                 <small class="muted"> ${ago(c.created_at)}</small></div>
               <p>${c.body}</p>
             </div>
@@ -361,7 +371,25 @@ export function CommentsModal({ post, onClose, onCountChange }) {
       <button class="btn primary" disabled=${!draft.trim() || sending}>Post</button>
     </form>
     ${reporting ? html`<${ReportModal} target="comment" id=${reporting.id} onClose=${() => setReporting(null)} />` : null}
-  </${Modal}>`;
+  </div>`;
+}
+
+/** Share a post: the system share sheet where available, otherwise copy the link. */
+export function ShareButton({ post }) {
+  const url = `${window.location.origin}${window.location.pathname}#/p/${post.id}`;
+  async function share() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Rate It', text: post.caption || 'Rate this on Rate It', url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast('Link copied');
+      }
+    } catch {
+      // Closing the share sheet isn't an error.
+    }
+  }
+  return html`<button class="action" onClick=${share} aria-label="Share"><${Icon} name="share" /><span>Share</span></button>`;
 }
 
 export function PostGrid({ posts }) {

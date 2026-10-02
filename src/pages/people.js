@@ -6,7 +6,7 @@ import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, setState, useStore } from '../lib/store.js';
 import { GridSkeleton, PostGrid, ReportModal } from '../components/post.js';
-import { Avatar, Chip, Confirm, Empty, ErrorState, Icon, Modal, Spinner, toast } from '../components/ui.js';
+import { Avatar, Chip, Confirm, Empty, ErrorState, Icon, Modal, Spinner, toast, useWide } from '../components/ui.js';
 
 export function DiscoverPage() {
   const { version } = useStore();
@@ -35,7 +35,7 @@ export function DiscoverPage() {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [mode, category, query, version, attempt]);
 
-  return html`<div class="page">
+  return html`<div class="page wide-page">
     <h1 class="page-title">Discover</h1>
     <label class="search">
       <${Icon} name="search" size=${18} />
@@ -66,6 +66,7 @@ export function DiscoverPage() {
 
 export function ProfilePage({ id }) {
   const store = useStore();
+  const wide = useWide();
   const userId = id || store.profile?.id;
   const isMe = userId === store.profile?.id;
   const [profile, setProfile] = useState(null);
@@ -116,11 +117,12 @@ export function ProfilePage({ id }) {
 
   if (error) return html`<${ErrorState} message=${error} onRetry=${load} />`;
   if (!profile) return html`<div class="page center"><${Spinner} big /></div>`;
+  const avatarSize = wide ? 136 : 96;
   const average = profile.received_rating_count > 0 ? (profile.received_rating_sum / profile.received_rating_count).toFixed(1) : '—';
 
-  return html`<div class="page">
-    <div class="profile-head">
-      <${Avatar} url=${api.avatarUrl(profile.avatar_path)} name=${profile.username} size=${96} />
+  return html`<div class="page wide-page">
+    <div class=${`profile-head ${wide ? 'wide' : ''}`}>
+      <${Avatar} url=${api.avatarUrl(profile.avatar_path)} name=${profile.username} size=${avatarSize} />
       <h1>@${profile.username}</h1>
       ${profile.bio ? html`<p class="muted">${profile.bio}</p>` : null}
       <div class="stats">

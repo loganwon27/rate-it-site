@@ -6,7 +6,7 @@ import { TERMS_VERSION } from './lib/format.js';
 import { html } from './lib/html.js';
 import { useRoute } from './lib/router.js';
 import { getState, setState, useStore } from './lib/store.js';
-import { Empty, ErrorState, Icon, Spinner, Toasts } from './components/ui.js';
+import { Avatar, Empty, ErrorState, Icon, Spinner, Toasts } from './components/ui.js';
 import { AuthPage, InterestsPage, NewPasswordPage, TermsGate } from './pages/auth.js';
 import { FeedPage, PostPage } from './pages/feed.js';
 import { DiscoverPage, ProfilePage } from './pages/people.js';
@@ -126,15 +126,25 @@ function Shell({ route }) {
     ['', 'Home', 'flame'], ['discover', 'Discover', 'grid'], ['create', 'Create', 'plus'], ['me', 'Profile', 'user'],
   ];
   const badge = store.unread > 0 ? html`<span class="badge">${store.unread > 99 ? '99+' : store.unread}</span>` : null;
+  const side = (href, name, label, icon, extra = null) => html`<a href=${href} class=${active(name) ? 'on' : ''}
+    aria-current=${active(name) ? 'page' : null}><${Icon} name=${icon} /><span>${label}</span>${extra}</a>`;
   return html`<div class="shell">
     <aside class="sidebar">
       <a class="brand" href="#/"><img src="icon.png" alt="" /><span>RATE IT</span></a>
       <nav>
-        ${tabs.map(([name, label, icon]) => html`<a href=${`#/${name}`} class=${active(name) ? 'on' : ''}
-          aria-current=${active(name) ? 'page' : null}><${Icon} name=${icon} />${label}</a>`)}
-        <a href="#/notifications" class=${active('notifications') ? 'on' : ''}><${Icon} name="bell" />Notifications ${badge}</a>
-        <a href="#/settings" class=${active('settings') ? 'on' : ''}><${Icon} name="gear" />Settings</a>
+        ${side('#/', '', 'Home', 'flame')}
+        ${side('#/discover', 'discover', 'Discover', 'grid')}
+        ${side('#/create', 'create', 'New Post', 'plus')}
+        <p class="nav-section">You</p>
+        ${side('#/me', 'me', 'Profile', 'user')}
+        ${side('#/notifications', 'notifications', 'Notifications', 'bell', badge)}
+        ${side('#/settings', 'settings', 'Settings', 'gear')}
+        ${store.isAdmin ? side('#/moderation', 'moderation', 'Moderation', 'shield2') : null}
       </nav>
+      <a class="account-card" href="#/me">
+        <${Avatar} url=${api.avatarUrl(store.profile?.avatar_path)} name=${store.profile?.username} size=${34} />
+        <span><strong>@${store.profile?.username}</strong><small>View profile</small></span>
+      </a>
     </aside>
     <header class="topbar">
       <a class="brand" href="#/"><img src="icon.png" alt="" /><span>RATE IT</span></a>
