@@ -111,7 +111,8 @@ label.field input { flex: 1; min-width: 0; background: none; border: 0; outline:
 }
 .skeleton, .skeleton-card { position: relative; }
 @keyframes shimmer { to { background-position: -150% 0; } }
-.photo-error { position: absolute; inset: 0; display: grid; place-items: center; color: var(--faint); }
+.photo-error { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 6px; color: var(--faint);
+  background: none; border: 0; cursor: pointer; font: inherit; z-index: 1; }
 .spinner {
   width: 26px; height: 26px; margin: 24px auto; border-radius: 50%;
   border: 3px solid var(--raised); border-top-color: var(--text); animation: spin .8s linear infinite;
