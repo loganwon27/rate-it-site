@@ -46,9 +46,9 @@ export function SettingsPage() {
     </section>` : null}
     <section class="group">
       <button class="link-row" onClick=${() => setDialog('blocked')}><span>Blocked users</span><span>›</span></button>
-      <a class="link-row" href=${SITE_URL} target="_blank" rel="noopener"><span>Help & support</span><span>↗</span></a>
-      <a class="link-row" href=${`${SITE_URL}terms.html`} target="_blank" rel="noopener"><span>Terms of Service</span><span>↗</span></a>
-      <a class="link-row" href=${`${SITE_URL}privacy.html`} target="_blank" rel="noopener"><span>Privacy Policy</span><span>↗</span></a>
+      <a class="link-row" href=${`${SITE_URL}support/`} target="_blank" rel="noopener"><span>Help & support</span><span>↗</span></a>
+      <a class="link-row" href=${`${SITE_URL}terms/`} target="_blank" rel="noopener"><span>Terms of Service</span><span>↗</span></a>
+      <a class="link-row" href=${`${SITE_URL}privacy/`} target="_blank" rel="noopener"><span>Privacy Policy</span><span>↗</span></a>
     </section>
     <section class="group">
       <button class="link-row" onClick=${() => setDialog('logout')}><span>Log out</span></button>

@@ -31,4 +31,4 @@ export const REPORT_REASONS = [
   ['sexual', 'Sexual content'], ['violence', 'Violence'], ['other', 'Other'],
 ];
 export const TERMS_VERSION = '2026-10-01';
-export const SITE_URL = 'https://loganwon27.github.io/rate-it-site/';
+export const SITE_URL = 'https://userateit.com/';

@@ -428,3 +428,6 @@ label.field input { flex: 1; min-width: 0; background: none; border: 0; outline:
 .interest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; margin: 12px 0; }
 .interest { height: 52px; border-radius: 14px; background: var(--raised); font-weight: 600; transition: background .15s, color .15s; }
 .interest.on { background: #fff; color: #000; }
+.legal-links { margin-top: 28px; font-size: 14px; color: var(--faint); }
+.legal-links a { color: var(--muted); }
+.legal-links a:hover { color: var(--text); }

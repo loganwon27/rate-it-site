@@ -86,6 +86,9 @@ export function AuthPage({ notice: initialNotice }) {
       <${Brand} />
       <h1>Post anything.<br />See what people think.</h1>
       <p class="muted">Rate photos 1–10 and see how everyone voted.</p>
+      <p class="legal-links">
+        <a href=${`${SITE_URL}support/`}>Help</a>${' · '}<a href=${`${SITE_URL}privacy/`}>Privacy</a>${' · '}<a href=${`${SITE_URL}terms/`}>Terms</a>
+      </p>
     </div>
     <form class="auth-card" onSubmit=${submit}>
       <h2>${mode === 'signUp' ? 'Create your account' : 'Welcome back'}</h2>
@@ -105,8 +108,8 @@ export function AuthPage({ notice: initialNotice }) {
       ${mode === 'signUp' ? html`<label class="agree">
         <input type="checkbox" checked=${agreed} onChange=${(e) => setAgreed(e.target.checked)} />
         <span>I agree to the community rules: no bullying, harassment, nudity or hate.
-${' '}<a href=${`${SITE_URL}terms.html`} target="_blank" rel="noopener">Terms of Service</a>${' · '}<a
-            href=${`${SITE_URL}privacy.html`} target="_blank" rel="noopener">Privacy Policy</a></span>
+${' '}<a href=${`${SITE_URL}terms/`} target="_blank" rel="noopener">Terms of Service</a>${' · '}<a
+            href=${`${SITE_URL}privacy/`} target="_blank" rel="noopener">Privacy Policy</a></span>
       </label>` : null}
       ${error ? html`<p class="error" role="alert">${error}</p>` : null}
       ${notice ? html`<p class="notice">${notice}</p>` : null}
@@ -179,8 +182,8 @@ export function TermsGate({ onAccepted }) {
       <h2>Community rules</h2>
       <ul class="rules">${rules.map((rule) => html`<li>${rule}</li>`)}</ul>
       <p class="muted small">Breaking these rules gets content removed and accounts banned.${' '}<a
-        href=${`${SITE_URL}terms.html`} target="_blank" rel="noopener">Terms</a>${' · '}<a
-        href=${`${SITE_URL}privacy.html`} target="_blank" rel="noopener">Privacy</a></p>
+        href=${`${SITE_URL}terms/`} target="_blank" rel="noopener">Terms</a>${' · '}<a
+        href=${`${SITE_URL}privacy/`} target="_blank" rel="noopener">Privacy</a></p>
       ${error ? html`<p class="error">${error}</p>` : null}
       <button class="btn primary block" disabled=${busy} onClick=${accept}>${busy ? 'Saving…' : 'I agree'}</button>
       <button class="link muted" onClick=${() => api.signOut()}>Log out</button>
