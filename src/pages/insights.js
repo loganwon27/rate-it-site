@@ -14,7 +14,6 @@ export function InsightsPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [days, setDays] = useState(14);
-  const [hideSample, setHideSample] = useState(false);
   const [, tick] = useState(0);
 
   const load = () => api.insights(days).then((d) => { setData(d); setError(null); }).catch((e) => setError(describeError(e)));
@@ -33,7 +32,8 @@ export function InsightsPage() {
   if (!data) return html`<div class="page center"><${Spinner} big /></div>`;
 
   const t = data.totals;
-  const accounts = hideSample ? data.accounts.filter((a) => !a.is_sample) : data.accounts;
+  const people = data.accounts.filter((a) => !a.is_sample);
+  const starters = data.accounts.filter((a) => a.is_sample);
   return html`<div class="page wide-page insights">
     <div class="insights-head">
       <h1 class="page-title">Insights</h1>
@@ -45,7 +45,7 @@ export function InsightsPage() {
       <${Stat} label="Ratings" value=${t.ratings} sub=${`${compact(t.ratings_24h)} in the last 24h`} />
       <${Stat} label="Average score" value=${t.average_score ?? '—'} sub=${`${Math.round((t.anonymous_share || 0) * 100)}% anonymous`} />
       <${Stat} label="Active people" value=${t.active_24h} sub=${`${compact(t.active_7d)} this week`} />
-      <${Stat} label="Accounts" value=${t.accounts} sub=${`${compact(t.sample_accounts)} starter · ${compact(t.new_accounts_7d)} new this week`} />
+      <${Stat} label="Real accounts" value=${t.accounts - t.sample_accounts} sub=${`+ ${compact(t.sample_accounts)} starter accounts`} />
       <${Stat} label="Posts" value=${t.posts} sub=${`${compact(t.likes)} likes · ${compact(t.comments)} comments`} />
     </div>
 
@@ -89,15 +89,18 @@ export function InsightsPage() {
     </div>
 
     <section class="panel">
-      <div class="panel-head">
-        <h2>Accounts <span class="muted">${accounts.length}</span></h2>
-        <label class="muted small check"><input type="checkbox" checked=${hideSample}
-          onChange=${(e) => setHideSample(e.target.checked)} /> Hide starter accounts</label>
-      </div>
-      <${AccountTable} rows=${accounts} />
+      <div class="panel-head"><h2>Real accounts <span class="muted">${people.length}</span></h2></div>
+      ${people.length ? html`<${AccountTable} rows=${people} />`
+        : html`<p class="muted small">No real sign-ups yet. They'll show up here as soon as someone joins.</p>`}
       <p class="muted small">Totals and favourite categories only. Which posts someone rated stays private,
         so anonymous ratings stay anonymous.</p>
     </section>
+
+    ${starters.length ? html`<details class="panel starters">
+      <summary><span><strong>Starter accounts</strong> <span class="muted">${starters.length}</span></span>
+        <span class="muted small">The sample accounts that keep the app from looking empty</span></summary>
+      <${AccountTable} rows=${starters} />
+    </details>` : null}
   </div>`;
 }
 
@@ -160,7 +163,7 @@ function AccountTable({ rows }) {
       <th class="num">Posts</th><th>Loves</th><th>Avoids</th><th>Last active</th></tr></thead>
     <tbody>${shown.map((a) => html`<tr>
       <td><a class="who" href=${`#/u/${a.id}`}><${Avatar} url=${api.avatarUrl(a.avatar_path)} name=${a.username} size=${28} />
-        @${a.username}${a.is_sample ? html` <small class="tag">starter</small>` : null}</a></td>
+        @${a.username}</a>${a.email ? html`<a class="email" href=${`mailto:${a.email}`}>${a.email}</a>` : null}</td>
       <td class="num">${compact(a.ratings_given)}</td>
       <td class="num">${a.avg_given ? Number(a.avg_given).toFixed(1) : '—'}</td>
       <td class="num">${compact(a.likes_given)}</td>
