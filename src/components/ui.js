@@ -51,6 +51,14 @@ export function Photo({ url, alt = '', className = '' }) {
   </div>`;
 }
 
+const BADGES = { founder: 'Founder', admin: 'Admin' };
+
+/** The small public tag next to a team member's username. Renders nothing for everyone else. */
+export function Badge({ kind }) {
+  if (!BADGES[kind]) return null;
+  return html`<span class=${`role-tag ${kind}`} title=${`Rate It ${BADGES[kind]}`}>${BADGES[kind]}</span>`;
+}
+
 export function Spinner({ big = false }) {
   return html`<div class=${big ? 'spinner big' : 'spinner'} role="status" aria-label="Loading"></div>`;
 }

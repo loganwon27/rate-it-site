@@ -232,7 +232,7 @@ export async function unlike(postId) {
   unwrap(await db.from('likes').delete().eq('post_id', postId).eq('user_id', id));
 }
 
-const COMMENT_COLUMNS = 'id, post_id, user_id, body, created_at, author:profiles(username, avatar_path)';
+const COMMENT_COLUMNS = 'id, post_id, user_id, body, created_at, author:profiles(username, avatar_path, badge)';
 
 export async function comments(postId) {
   return unwrap(await db.from('comments').select(COMMENT_COLUMNS).eq('post_id', postId)

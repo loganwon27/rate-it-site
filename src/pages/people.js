@@ -6,7 +6,7 @@ import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, setState, useStore } from '../lib/store.js';
 import { GridSkeleton, PostGrid, ReportModal } from '../components/post.js';
-import { Avatar, Chip, Confirm, Empty, ErrorState, Icon, Modal, Spinner, toast, useWide } from '../components/ui.js';
+import { Avatar, Badge, Chip, Confirm, Empty, ErrorState, Icon, Modal, Spinner, toast, useWide } from '../components/ui.js';
 
 export function DiscoverPage() {
   const { version } = useStore();
@@ -123,7 +123,7 @@ export function ProfilePage({ id }) {
   return html`<div class="page wide-page">
     <div class=${`profile-head ${wide ? 'wide' : ''}`}>
       <${Avatar} url=${api.avatarUrl(profile.avatar_path)} name=${profile.username} size=${avatarSize} />
-      <h1>@${profile.username}</h1>
+      <h1>@${profile.username}<${Badge} kind=${profile.badge} /></h1>
       ${profile.bio ? html`<p class="muted">${profile.bio}</p>` : null}
       <div class="stats">
         <div><strong>${average}</strong><span>average</span></div>

@@ -5,7 +5,7 @@ import { ago, compact, plural, ratingColor, REPORT_REASONS } from '../lib/format
 import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, getState, setState } from '../lib/store.js';
-import { Avatar, Confirm, Empty, Icon, Modal, Photo, Spinner, toast } from './ui.js';
+import { Avatar, Confirm, Empty, Icon, Modal, Photo, Spinner, toast, Badge } from './ui.js';
 
 /** One post plus everything you can do to it — the web twin of the iOS PostState. */
 export function usePost(initial) {
@@ -162,7 +162,7 @@ export function PostHeader({ post, children }) {
   const author = post.author_id
     ? html`<a class="author" href=${`#/u/${post.author_id}`}>
         <${Avatar} url=${api.avatarUrl(post.author_avatar_path)} name=${post.author_username} size=${34} />
-        <span><strong>@${post.author_username}</strong><small>${ago(post.created_at)}</small></span>
+        <span><strong>@${post.author_username}<${Badge} kind=${post.author_badge} /></strong><small>${ago(post.created_at)}</small></span>
       </a>`
     : html`<span class="author">
         <span class="avatar avatar-fallback" style="width:34px;height:34px"><${Icon} name="eyeOff" size=${16} /></span>
@@ -357,7 +357,7 @@ export function CommentsPanel({ post, onCountChange, onNavigate, inline = false 
         : items.map((c) => html`<div class="comment">
             <${Avatar} url=${api.avatarUrl(c.author?.avatar_path)} name=${c.author?.username} size=${32} />
             <div class="comment-body">
-              <div><a href=${`#/u/${c.user_id}`} onClick=${onNavigate}><strong>@${c.author?.username ?? 'someone'}</strong></a>
+              <div><a href=${`#/u/${c.user_id}`} onClick=${onNavigate}><strong>@${c.author?.username ?? 'someone'}</strong></a><${Badge} kind=${c.author?.badge} />
                 <small class="muted"> ${ago(c.created_at)}</small></div>
               <p>${c.body}</p>
             </div>
