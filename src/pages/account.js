@@ -43,6 +43,7 @@ export function SettingsPage() {
     ${store.isAdmin ? html`<section class="group">
       <h3>Admin</h3>
       <a class="link-row" href="#/moderation"><span><${Icon} name="shield" size=${18} /> Moderation queue</span><span>›</span></a>
+      <a class="link-row" href="#/insights"><span><${Icon} name="chart" size=${18} /> Insights</span><span>›</span></a>
     </section>` : null}
     <section class="group">
       <button class="link-row" onClick=${() => setDialog('blocked')}><span>Blocked users</span><span>›</span></button>

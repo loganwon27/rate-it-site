@@ -12,6 +12,7 @@ import { FeedPage, PostPage } from './pages/feed.js';
 import { DiscoverPage, ProfilePage } from './pages/people.js';
 import { CreatePage } from './pages/create.js';
 import { ModerationPage, NotificationsPage, SettingsPage } from './pages/account.js';
+import { InsightsPage } from './pages/insights.js';
 
 // ---------- Email links ----------
 // Confirmation and password-reset emails land here with ?code=… (or an error). Supabase exchanges the code
@@ -111,6 +112,7 @@ function page(route) {
     case 'settings': return html`<${SettingsPage} />`;
     case 'notifications': return html`<${NotificationsPage} />`;
     case 'moderation': return html`<${ModerationPage} />`;
+    case 'insights': return html`<${InsightsPage} />`;
     default: return html`<${Empty} icon="search" title="Page not found" action="Go home" onAction=${() => { window.location.hash = '/'; }} />`;
   }
 }
@@ -140,6 +142,7 @@ function Shell({ route }) {
         ${side('#/notifications', 'notifications', 'Notifications', 'bell', badge)}
         ${side('#/settings', 'settings', 'Settings', 'gear')}
         ${store.isAdmin ? side('#/moderation', 'moderation', 'Moderation', 'shield2') : null}
+        ${store.isAdmin ? side('#/insights', 'insights', 'Insights', 'chart') : null}
       </nav>
       <a class="account-card" href="#/me">
         <${Avatar} url=${api.avatarUrl(store.profile?.avatar_path)} name=${store.profile?.username} size=${34} />

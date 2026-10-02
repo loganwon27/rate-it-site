@@ -294,6 +294,10 @@ export async function openReports() {
   return unwrap(await db.rpc('admin_open_reports'));
 }
 
+export async function insights(days = 14) {
+  return unwrap(await db.rpc('admin_insights', { p_days: days }));
+}
+
 export async function resolveReport(item, action) {
   unwrap(await db.rpc('admin_resolve', { p_target_type: item.target_type, p_target_id: item.target_id, p_action: action }));
 }

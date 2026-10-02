@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { html } from '../lib/html.js';
 
 export function Icon({ name, size = 22 }) {
@@ -25,6 +25,7 @@ export function Icon({ name, size = 22 }) {
     down: 'M12 5v14M6 13l6 6 6-6',
     share: 'M12 4v11M8 8l4-4 4 4M5 13v6h14v-6',
     shield2: 'M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6z',
+    chart: 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
   };
   const filled = name === 'star';
   return html`<svg class="icon" width=${size} height=${size} viewBox="0 0 24 24" aria-hidden="true"
@@ -33,45 +34,20 @@ export function Icon({ name, size = 22 }) {
 }
 
 export function Avatar({ url, name, size = 36 }) {
-  const [failedUrl, setFailedUrl] = useState(null);
+  const [failed, setFailed] = useState(false);
   const style = `width:${size}px;height:${size}px;font-size:${size * 0.42}px`;
-  if (url && failedUrl !== url) {
-    return html`<img class="avatar" style=${style} src=${url} alt="" loading="lazy" onError=${() => setFailedUrl(url)} />`;
+  if (url && !failed) {
+    return html`<img class="avatar" style=${style} src=${url} alt="" loading="lazy" onError=${() => setFailed(true)} />`;
   }
   return html`<span class="avatar avatar-fallback" style=${style} aria-hidden="true">${(name || '?')[0].toUpperCase()}</span>`;
 }
 
-/**
- * A photo that fades in once loaded. The load state is tied to the URL it belongs to, so a photo that comes
- * straight from the cache (the feed pre-loads the next few) can't be reset to "loading" and stay invisible.
- * Failed loads retry on their own a couple of times (flaky connections), then offer a tap to retry.
- */
 export function Photo({ url, alt = '', className = '' }) {
-  const [load, setLoad] = useState({ url, state: 'loading', attempt: 0 });
-  const current = load.url === url ? load : { url, state: 'loading', attempt: 0 };
-  const img = useRef(null);
-  const update = (changes) => setLoad((l) => ({ ...(l.url === url ? l : { url, state: 'loading', attempt: 0 }), ...changes }));
-
-  // Covers a load that finished before Preact attached the listener.
-  useEffect(() => {
-    const el = img.current;
-    if (el && el.complete && el.naturalWidth > 0) update({ state: 'loaded' });
-  }, [url, current.attempt]);
-
-  useEffect(() => {
-    if (current.state !== 'error' || current.attempt >= 2) return;
-    const timer = setTimeout(() => update({ state: 'loading', attempt: current.attempt + 1 }), 1500 * (current.attempt + 1));
-    return () => clearTimeout(timer);
-  }, [current.state, current.attempt, url]);
-
-  const src = url && current.attempt > 0 ? `${url}${url.includes('?') ? '&' : '?'}retry=${current.attempt}` : url;
-  const gaveUp = current.state === 'error' && current.attempt >= 2;
-  const retry = (e) => { e.stopPropagation(); update({ state: 'loading', attempt: current.attempt + 1 }); };
-  return html`<div class=${`photo ${className} ${current.state}`}>
-    ${gaveUp ? html`<button class="photo-error" onClick=${retry} aria-label="Photo didn't load. Tap to retry">
-      <${Icon} name="photo" size=${28} /><span class="small">Tap to retry</span></button>` : null}
-    <img ref=${img} key=${src} src=${src} alt=${alt} loading="lazy"
-      onLoad=${() => update({ state: 'loaded' })} onError=${() => update({ state: 'error' })} />
+  const [state, setState] = useState('loading');
+  useEffect(() => setState('loading'), [url]);
+  return html`<div class=${`photo ${className} ${state}`}>
+    ${state === 'error' ? html`<span class="photo-error"><${Icon} name="photo" size=${28} /></span>` : null}
+    <img src=${url} alt=${alt} loading="lazy" onLoad=${() => setState('loaded')} onError=${() => setState('error')} />
   </div>`;
 }
 
