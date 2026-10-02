@@ -10,8 +10,8 @@ function Brand() {
   return html`<div class="brand"><img src="icon.png" alt="" /><span>RATE IT</span></div>`;
 }
 
-export function AuthPage({ notice: initialNotice }) {
-  const [mode, setMode] = useState('signUp');
+export function AuthPage({ notice: initialNotice, initialMode = 'signUp' }) {
+  const [mode, setMode] = useState(initialMode || 'signUp');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

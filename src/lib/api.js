@@ -60,7 +60,18 @@ export async function updatePassword(password) {
 }
 
 export async function signOut() {
+  // Stop this browser getting the account's notifications (imported lazily: push.js imports this file).
+  await (await import('./push.js')).forgetPushForThisAccount();
   await db.auth.signOut();
+}
+
+/** Push notifications: register or remove this browser (web) for the signed-in account. */
+export async function registerPush(endpoint, subscription) {
+  unwrap(await db.rpc('register_push_token', { p_token: endpoint, p_platform: 'web', p_subscription: subscription }));
+}
+
+export async function unregisterPush(endpoint) {
+  unwrap(await db.rpc('unregister_push_token', { p_token: endpoint }));
 }
 
 /** Removes the account's photos, then the account and everything tied to it. */
@@ -211,6 +222,16 @@ export async function deletePost(p) {
 
 export async function rate(postId, score, anonymously) {
   return unwrap(await db.rpc('rate_post', { p_post: postId, p_score: score, p_anonymous: anonymously }));
+}
+
+/** What a share link shows; works signed out. Null if the post is gone or hidden. */
+export async function sharedPost(code) {
+  return unwrap(await db.rpc('shared_post', { p_code: code }));
+}
+
+/** The link people share: opens the photo for anyone, signed in or not. */
+export function shareUrl(post) {
+  return post.share_code ? `https://userateit.com/r/?p=${post.share_code}` : `https://userateit.com/#/p/${post.id}`;
 }
 
 export async function ratingStats(postId) {

@@ -175,7 +175,11 @@ function PostDetail({ initial, wide }) {
   const [showComments, setShowComments] = useState(false);
   const countChange = (d) => state.setPost({ ...post, comment_count: post.comment_count + d });
   const hidden = post.is_mine && post.is_hidden
-    ? html`<p class="notice">Hidden from others while we review reports about it.</p>` : null;
+    ? html`<p class="notice">Hidden from others while we review reports about it.</p>`
+    : post.is_mine ? html`<div class="share-cta">
+        <span><strong>Get more ratings</strong><small>Share your link anywhere. Friends can rate it without the app.</small></span>
+        <${ShareButton} post=${post} label="Share link" className="btn primary small" />
+      </div>` : null;
   const rating = canSeeResults ? html`
       ${chosen != null ? html`<p class="gave">You gave it <strong style="color:var(--accent)">${chosen}</strong></p>` : null}
       <${Results} stats=${stats} mine=${chosen} owner=${post.is_mine} />` : html`

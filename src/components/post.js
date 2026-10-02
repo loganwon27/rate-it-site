@@ -375,12 +375,12 @@ export function CommentsPanel({ post, onCountChange, onNavigate, inline = false 
 }
 
 /** Share a post: the system share sheet where available, otherwise copy the link. */
-export function ShareButton({ post }) {
-  const url = `${window.location.origin}${window.location.pathname}#/p/${post.id}`;
+export function ShareButton({ post, label = 'Share', className = 'action' }) {
+  const url = api.shareUrl(post);
   async function share() {
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Rate It', text: post.caption || 'Rate this on Rate It', url });
+        await navigator.share({ title: 'Rate It', text: post.is_mine ? 'Rate my photo 1–10' : 'Rate this 1–10 on Rate It', url });
       } else {
         await navigator.clipboard.writeText(url);
         toast('Link copied');
@@ -389,7 +389,7 @@ export function ShareButton({ post }) {
       // Closing the share sheet isn't an error.
     }
   }
-  return html`<button class="action" onClick=${share} aria-label="Share"><${Icon} name="share" /><span>Share</span></button>`;
+  return html`<button class=${className} onClick=${share} aria-label=${label}><${Icon} name="share" /><span>${label}</span></button>`;
 }
 
 export function PostGrid({ posts }) {

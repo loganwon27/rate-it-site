@@ -2,14 +2,46 @@ import { useEffect, useState } from 'preact/hooks';
 import * as api from '../lib/api.js';
 import { describeError } from '../lib/backend.js';
 import { ago, SITE_URL } from '../lib/format.js';
+import { APPEARANCES, getAppearance, setAppearance } from '../lib/appearance.js';
 import { html } from '../lib/html.js';
+import { disablePush, enablePush, pushEnabled, pushSupport } from '../lib/push.js';
 import { bumpVersion, setState, useStore } from '../lib/store.js';
 import { Avatar, Confirm, Empty, ErrorState, Icon, Modal, Photo, Spinner, toast } from '../components/ui.js';
+
+/** "Push notifications on this device": subscribes this browser to Web Push. */
+function PushRow() {
+  const support = pushSupport();
+  const [on, setOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { pushEnabled().then(setOn).catch(() => {}); }, []);
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      if (on) { await disablePush(); setOn(false); toast('Push notifications off for this device'); }
+      else { await enablePush(); setOn(true); toast('Push notifications on'); }
+    } catch (e) {
+      toast(e.message || describeError(e));
+    }
+    setBusy(false);
+  }
+
+  const hint = support === 'needs-home-screen'
+    ? 'On iPhone: tap Share → Add to Home Screen, open Rate It from there, then turn this on.'
+    : support === 'unsupported' ? "This browser doesn't support push notifications."
+    : 'Get likes, comments and new followers even when Rate It is closed.';
+  return html`<label class="switch-row">
+    <span>Push notifications on this device<br /><small class="muted">${hint}</small></span>
+    <input type="checkbox" class="switch" checked=${on} disabled=${busy || support === 'unsupported'}
+      onChange=${toggle} aria-label="Push notifications on this device" />
+  </label>`;
+}
 
 export function SettingsPage() {
   const store = useStore();
   const settings = store.settings || {};
   const [dialog, setDialog] = useState(null);
+  const [appearance, setAppearanceState] = useState(getAppearance);
 
   function toggle(key) {
     const value = !settings[key];
@@ -30,11 +62,20 @@ export function SettingsPage() {
       <div class="kv"><span>Email</span><span>${store.session?.user?.email}</span></div>
     </section>
     <section class="group">
+      <h3>Appearance</h3>
+      <div class="seg appearance-seg" role="radiogroup" aria-label="Appearance">
+        ${APPEARANCES.map(([value, label]) => html`<button role="radio" aria-checked=${appearance === value}
+          class=${appearance === value ? 'on' : ''} onClick=${() => { setAppearance(value); setAppearanceState(value); }}>${label}</button>`)}
+      </div>
+      <small class="muted">System follows your device's light or dark setting.</small>
+    </section>
+    <section class="group">
       <h3>Privacy</h3>
       ${toggleRow('rate_anonymously', 'Rate anonymously', 'People see your rating in their totals but not that it came from you.')}
     </section>
     <section class="group">
       <h3>Notifications</h3>
+      <${PushRow} />
       ${toggleRow('notify_follows', 'New followers')}
       ${toggleRow('notify_likes', 'Likes')}
       ${toggleRow('notify_comments', 'Comments')}

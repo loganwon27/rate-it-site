@@ -13,6 +13,8 @@ import { DiscoverPage, ProfilePage } from './pages/people.js';
 import { CreatePage } from './pages/create.js';
 import { ModerationPage, NotificationsPage, SettingsPage } from './pages/account.js';
 import { InsightsPage } from './pages/insights.js';
+import { SharePage, submitPendingShareRating } from './pages/share.js';
+import { refreshPush } from './lib/push.js';
 
 // ---------- Email links ----------
 // Confirmation and password-reset emails land here with ?code=… (or an error). Supabase exchanges the code
@@ -79,6 +81,9 @@ function App() {
   const route = useRoute();
   useEffect(start, []);
 
+  // Share links work signed out: anyone can see the photo and pick a score before making an account.
+  if (route.name === 'r' && store.phase === 'signedOut') return html`<${SharePage} code=${route.params[0]} key=${route.params[0]} />`;
+
   switch (store.phase) {
     case 'setup':
       return html`<${Empty} icon="gear" title="Almost ready"
@@ -86,7 +91,7 @@ function App() {
     case 'loading':
       return html`<div class="splash"><img src="icon.png" alt="" /><${Spinner} /></div>`;
     case 'signedOut':
-      return html`<${AuthPage} notice=${store.notice} />`;
+      return html`<${AuthPage} notice=${store.notice} initialMode=${store.authMode} key=${store.authMode || 'auth'} />`;
     case 'recovery':
       return html`<${NewPasswordPage} />`;
     case 'loadFailed':
@@ -112,6 +117,7 @@ function page(route) {
     case 'settings': return html`<${SettingsPage} />`;
     case 'notifications': return html`<${NotificationsPage} />`;
     case 'moderation': return html`<${ModerationPage} />`;
+    case 'r': return html`<${SharePage} code=${id} key=${id} />`;
     case 'insights': return html`<${InsightsPage} />`;
     default: return html`<${Empty} icon="search" title="Page not found" action="Go home" onAction=${() => { window.location.hash = '/'; }} />`;
   }
@@ -119,6 +125,15 @@ function page(route) {
 
 function Shell({ route }) {
   const store = useStore();
+  // A score picked on a share link before signing up gets submitted now.
+  useEffect(() => { submitPendingShareRating(store.settings?.rate_anonymously ?? true); }, []);
+  // Keep this browser's push subscription tied to whoever is signed in; open pages from tapped notifications.
+  useEffect(() => {
+    refreshPush();
+    const onMessage = (e) => { if (e.data?.type === 'open' && e.data.url) window.location.href = e.data.url; };
+    navigator.serviceWorker?.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', onMessage);
+  }, []);
   const myId = store.profile?.id;
   const active = (name) => {
     if (name === 'me') return route.name === 'me' || (route.name === 'u' && route.params[0] === myId);

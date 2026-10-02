@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rate my photo · Rate It</title>
+<meta name="description" content="Tap a number from 1 to 10 and see how everyone else rated it.">
+<meta property="og:title" content="Rate my photo 1–10">
+<meta property="og:description" content="Tap a number from 1 to 10 and see how everyone else rated it.">
+<meta property="og:site_name" content="Rate It">
+<meta property="og:image" content="https://userateit.com/icon.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#09090a">
+<style>html,body{margin:0;background:#09090a;color:#9e9ea0;font:16px -apple-system,system-ui,sans-serif}a{color:#ffc73d}p{text-align:center;margin-top:40vh}</style>
+<script>
+  // Share links look like /r/?p=<code>; the app shows them at /#/r/<code>.
+  var code = new URLSearchParams(location.search).get('p') || '';
+  location.replace('/#/r/' + encodeURIComponent(code.replace(/[^A-Za-z0-9]/g, '')));
+</script>
+</head>
+<body><p><a href="/">Open Rate It</a></p></body>
+</html>
