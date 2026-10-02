@@ -680,3 +680,10 @@ h1 .role-tag { font-size: 12px; padding: 2px 9px; vertical-align: 5px; margin-le
 .appearance-seg { display: flex; margin: 4px 0 8px; }
 .appearance-seg button { flex: 1; padding: 8px 10px; font-size: 14px; }
 .role-tag.admin { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* Feed: each new post slides in from the direction you scrolled. */
+@keyframes feed-in-next { from { opacity: 0; transform: translateY(28px); } }
+@keyframes feed-in-back { from { opacity: 0; transform: translateY(-28px); } }
+.enter-next > * { animation: feed-in-next .28s cubic-bezier(.2, .9, .3, 1); }
+.enter-back > * { animation: feed-in-back .28s cubic-bezier(.2, .9, .3, 1); }
+@media (prefers-reduced-motion: reduce) { .enter-next > *, .enter-back > * { animation: none; } }

@@ -19,6 +19,7 @@ export function FeedPage() {
   const [error, setError] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [reachedEnd, setReachedEnd] = useState(false);
+  const [direction, setDirection] = useState('next');
 
   async function load() {
     setError(null);
@@ -47,6 +48,15 @@ export function FeedPage() {
     }
   }, [index, posts]);
 
+  // Scroll wheel / two-finger trackpad swipe: one post per gesture (down = next, up = back).
+  useEffect(() => {
+    if (!posts) return undefined;
+    return onScrollGesture((dir) => {
+      if (dir > 0 && index < posts.length) { setDirection('next'); setIndex(index + 1); }
+      if (dir < 0 && index > 0) { setDirection('back'); setIndex(index - 1); }
+    });
+  }, [index, posts]);
+
   if (error) return html`<${ErrorState} message=${error} onRetry=${load} />`;
   if (!posts) return html`<div class=${wide ? 'feed-wide' : 'feed'}><div class="feed-card skeleton-card"></div></div>`;
   const current = posts[index];
@@ -55,12 +65,56 @@ export function FeedPage() {
       message="Nothing new to rate right now. Check back soon — or post something yourself."
       action="Create a post" onAction=${() => navigate('/create')} />`;
   }
-  const next = () => setIndex(index + 1);
-  const previous = index > 0 ? () => setIndex(index - 1) : null;
+  const next = () => { setDirection('next'); setIndex(index + 1); };
+  const previous = index > 0 ? () => { setDirection('back'); setIndex(index - 1); } : null;
   const drop = () => setPosts(posts.filter((p) => p.id !== current.id));
-  return html`<div class=${wide ? 'feed-wide' : 'feed'}>
+  return html`<div class=${`${wide ? 'feed-wide' : 'feed'} enter-${direction}`} key=${current.id}>
     <${FeedCard} key=${current.id} initial=${current} wide=${wide} onNext=${next} onPrevious=${previous} onGone=${drop} />
   </div>`;
+}
+
+/**
+ * Calls `onStep(+1 | -1)` once per scroll gesture. A trackpad flick keeps sending wheel events (momentum)
+ * for a while, so after a step we wait for the wheel to go quiet before the next one counts.
+ */
+function onScrollGesture(onStep) {
+  let total = 0;
+  let locked = false;
+  let lastEvent = 0;
+  let lockedAt = 0;
+  const onWheel = (e) => {
+    if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // pinch-zoom or sideways
+    if (document.body.classList.contains('modal-open') || e.target.closest('textarea, input, .menu, .comments-panel')) return;
+    // Let a part of the page that can still scroll (a long side panel) scroll first.
+    for (let el = e.target; el && el !== document.body; el = el.parentElement) {
+      const style = getComputedStyle(el);
+      if (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1) {
+        const atEdge = e.deltaY > 0 ? el.scrollTop + el.clientHeight >= el.scrollHeight - 1 : el.scrollTop <= 0;
+        if (!atEdge) return;
+      }
+    }
+    // Same for the whole page in a short window: reach the rating buttons before moving on.
+    const page = document.scrollingElement;
+    if (page.scrollHeight > page.clientHeight + 80) {
+      const atEdge = e.deltaY > 0 ? page.scrollTop + page.clientHeight >= page.scrollHeight - 1 : page.scrollTop <= 0;
+      if (!atEdge) return;
+    }
+    e.preventDefault();
+    const now = performance.now();
+    if (locked) {
+      if (now - lastEvent > 180 && now - lockedAt > 450) { locked = false; total = 0; } else { lastEvent = now; return; }
+    }
+    lastEvent = now;
+    total += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    if (Math.abs(total) >= 24) {
+      onStep(total > 0 ? 1 : -1);
+      locked = true;
+      lockedAt = now;
+      total = 0;
+    }
+  };
+  window.addEventListener('wheel', onWheel, { passive: false });
+  return () => window.removeEventListener('wheel', onWheel);
 }
 
 function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
@@ -97,7 +151,7 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
     <div class="rate-head"><strong>What do you think?</strong><${AnonymityToggle} /></div>
     <${RatingBar} locked=${chosen} busy=${busy} onRate=${state.rate} keyboard=${true} />
     <div class="rate-foot">
-      <span class="muted small hint">${wide ? 'Press 1–9, or 0 for 10 · ↓ next · ↑ back' : 'Tip: press 1–9 or 0 for 10'}</span>
+      <span class="muted small hint">${wide ? 'Press 1–9, or 0 for 10 · scroll or ↓ for next · ↑ back' : 'Tip: press 1–9 or 0 for 10'}</span>
       <button class="link muted small" onClick=${onNext}>Skip</button>
     </div>
   </div>`;
