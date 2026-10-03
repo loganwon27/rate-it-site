@@ -696,3 +696,6 @@ h1 .role-tag { font-size: 12px; padding: 2px 9px; vertical-align: 5px; margin-le
 .banned-list li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
 .banned-list li:first-child { border-top: 0; }
 .banned-list .who { flex: 1; min-width: 0; display: grid; gap: 2px; }
+/* Profile ⋯ menu, top-right of the profile header */
+.profile-head { position: relative; }
+.profile-menu { position: absolute; top: 0; right: 0; }

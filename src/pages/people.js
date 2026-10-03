@@ -151,12 +151,10 @@ export function ProfilePage({ id }) {
             <a class="btn ghost" href="#/settings">Settings</a></div>`
         : html`<div class="row">
             <button class=${`btn ${following ? 'secondary' : 'primary'}`} onClick=${toggleFollow}>${following ? 'Following' : 'Follow'}</button>
-            <button class="btn ghost" onClick=${() => setDialog('report')}>Report</button>
-            <button class="btn ghost danger-text" onClick=${() => setDialog('block')}>Block</button>
-            ${store.isOwner ? (banLabel(profile)
-              ? html`<button class="btn ghost" onClick=${unban}>Unban</button>`
-              : html`<button class="btn ghost danger-text" onClick=${() => setDialog('ban')}>Ban</button>`) : null}
           </div>`}
+      ${isMe ? null : html`<${ProfileMenu} username=${profile.username} canBan=${store.isOwner} banned=${Boolean(banLabel(profile))}
+          onReport=${() => setDialog('report')} onBlock=${() => setDialog('block')}
+          onBan=${() => setDialog('ban')} onUnban=${unban} />`}
     </div>
     ${!posts ? html`<${GridSkeleton} count=${6} />`
       : posts.length === 0 ? html`<${Empty} icon="camera" title="Nothing here yet."
@@ -173,6 +171,27 @@ export function ProfilePage({ id }) {
     ${dialog === 'block' ? html`<${Confirm} title=${`Block @${profile.username}?`}
         message="You won't see each other's posts, and they won't be able to follow you."
         confirmLabel="Block" onConfirm=${block} onCancel=${() => setDialog(null)} />` : null}
+  </div>`;
+}
+
+/** The ⋯ menu in a profile's top-right corner: Report, Block, and (owner only) Ban / Unban. */
+function ProfileMenu({ username, canBan, banned, onReport, onBlock, onBan, onUnban }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = () => setOpen(false);
+    setTimeout(() => window.addEventListener('click', close), 0);
+    return () => window.removeEventListener('click', close);
+  }, [open]);
+  return html`<div class="menu-wrap profile-menu">
+    <button class="icon-btn" aria-label="More" aria-expanded=${open} onClick=${() => setOpen(!open)}><${Icon} name="more" /></button>
+    ${open ? html`<div class="menu" role="menu">
+      <button role="menuitem" onClick=${onReport}>Report profile</button>
+      <button role="menuitem" class="danger" onClick=${onBlock}>Block @${username}</button>
+      ${canBan ? (banned
+        ? html`<button role="menuitem" onClick=${onUnban}>Unban @${username}</button>`
+        : html`<button role="menuitem" class="danger" onClick=${onBan}>Ban @${username}…</button>`) : null}
+    </div>` : null}
   </div>`;
 }
 
