@@ -6,6 +6,7 @@ import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, setState, useStore } from '../lib/store.js';
 import { GridSkeleton, PostGrid, ReportModal } from '../components/post.js';
+import { BanDialog, banLabel } from '../components/ban.js';
 import { Avatar, Badge, Chip, Confirm, Empty, ErrorState, Icon, Modal, Spinner, toast, useWide } from '../components/ui.js';
 
 export function DiscoverPage() {
@@ -104,6 +105,16 @@ export function ProfilePage({ id }) {
     }
   }
 
+  async function unban() {
+    try {
+      await api.ownerUnban(userId);
+      setProfile({ ...profile, banned_at: null, banned_until: null, ban_reason: '' });
+      toast(`@${profile.username} is unbanned`);
+    } catch (e) {
+      toast(describeError(e));
+    }
+  }
+
   async function block() {
     try {
       await api.block(userId);
@@ -125,6 +136,7 @@ export function ProfilePage({ id }) {
       <${Avatar} url=${api.avatarUrl(profile.avatar_path)} name=${profile.username} size=${avatarSize} />
       <h1>@${profile.username}<${Badge} kind=${profile.badge} /></h1>
       ${profile.bio ? html`<p class="muted">${profile.bio}</p>` : null}
+      ${store.isOwner && !isMe && banLabel(profile) ? html`<p class="ban-status">${banLabel(profile)}${profile.ban_reason ? ` · ${profile.ban_reason}` : ''}</p>` : null}
       <div class="stats">
         <div><strong>${average}</strong><span>average</span></div>
         <div><strong>${compact(profile.post_count)}</strong><span>${profile.post_count === 1 ? 'post' : 'posts'}</span></div>
@@ -141,6 +153,9 @@ export function ProfilePage({ id }) {
             <button class=${`btn ${following ? 'secondary' : 'primary'}`} onClick=${toggleFollow}>${following ? 'Following' : 'Follow'}</button>
             <button class="btn ghost" onClick=${() => setDialog('report')}>Report</button>
             <button class="btn ghost danger-text" onClick=${() => setDialog('block')}>Block</button>
+            ${store.isOwner ? (banLabel(profile)
+              ? html`<button class="btn ghost" onClick=${unban}>Unban</button>`
+              : html`<button class="btn ghost danger-text" onClick=${() => setDialog('ban')}>Ban</button>`) : null}
           </div>`}
     </div>
     ${!posts ? html`<${GridSkeleton} count=${6} />`
@@ -153,6 +168,8 @@ export function ProfilePage({ id }) {
     ${dialog === 'followers' || dialog === 'following' ? html`<${FollowList} userId=${userId} kind=${dialog}
         isMe=${isMe} onClose=${() => setDialog(null)} />` : null}
     ${dialog === 'report' ? html`<${ReportModal} target="profile" id=${userId} onClose=${() => setDialog(null)} />` : null}
+    ${dialog === 'ban' ? html`<${BanDialog} username=${profile.username} userId=${userId} onClose=${() => setDialog(null)}
+        onBanned=${(until) => { setDialog(null); setProfile({ ...profile, banned_at: new Date().toISOString(), banned_until: until }); }} />` : null}
     ${dialog === 'block' ? html`<${Confirm} title=${`Block @${profile.username}?`}
         message="You won't see each other's posts, and they won't be able to follow you."
         confirmLabel="Block" onConfirm=${block} onCancel=${() => setDialog(null)} />` : null}

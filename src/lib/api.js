@@ -146,6 +146,25 @@ export async function isAdmin() {
   return Boolean(data);
 }
 
+/** The app owner (@logan): the only account that can ban. */
+export async function isOwner() {
+  const { data } = await db.rpc('is_owner');
+  return Boolean(data);
+}
+
+/** Owner only. `until` is an ISO date, or null to ban forever. */
+export async function ownerBan(userId, until, reason = '') {
+  unwrap(await db.rpc('owner_ban', { p_user: userId, p_until: until, p_reason: reason }));
+}
+
+export async function ownerUnban(userId) {
+  unwrap(await db.rpc('owner_unban', { p_user: userId }));
+}
+
+export async function bannedAccounts() {
+  return unwrap(await db.rpc('owner_banned_accounts'));
+}
+
 // ---------- Posts ----------
 
 export function postImage(post) {

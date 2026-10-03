@@ -11,9 +11,10 @@ import { AuthPage, InterestsPage, NewPasswordPage, TermsGate } from './pages/aut
 import { FeedPage, PostPage } from './pages/feed.js';
 import { DiscoverPage, ProfilePage } from './pages/people.js';
 import { CreatePage } from './pages/create.js';
-import { ModerationPage, NotificationsPage, SettingsPage } from './pages/account.js';
+import { BannedPage, ModerationPage, NotificationsPage, SettingsPage } from './pages/account.js';
 import { InsightsPage } from './pages/insights.js';
 import { SharePage, submitPendingShareRating } from './pages/share.js';
+import { banLabel } from './components/ban.js';
 import { refreshPush } from './lib/push.js';
 
 // ---------- Email links ----------
@@ -31,14 +32,14 @@ if (landedFromEmail) {
 async function loadSignedInUser(session) {
   setState({ session, phase: getState().phase === 'ready' ? 'ready' : 'loading' });
   try {
-    const [profile, settings, isAdmin, unread] = await Promise.all([
-      api.myProfile(), api.settings(), api.isAdmin(), api.unreadCount().catch(() => 0),
+    const [profile, settings, isAdmin, isOwner, unread] = await Promise.all([
+      api.myProfile(), api.settings(), api.isAdmin(), api.isOwner(), api.unreadCount().catch(() => 0),
     ]);
     let skipped = false;
     try { skipped = localStorage.getItem(`interestsDone-${profile.id}`) === '1'; } catch {}
     const phase = settings.terms_version !== TERMS_VERSION ? 'terms'
       : !profile.interests.length && !skipped ? 'interests' : 'ready';
-    setState({ profile, settings, isAdmin, unread, phase, error: null });
+    setState({ profile, settings, isAdmin, isOwner, unread, phase, error: null });
   } catch (error) {
     setState({ phase: 'loadFailed', error: describeError(error) });
   }
@@ -65,7 +66,7 @@ function start() {
       const notice = emailError
         ? `That link didn't work (${emailError}). Try again.`
         : landedFromEmail ? 'Your email is confirmed. Log in below.' : null;
-      setState({ session: null, profile: null, settings: null, isAdmin: false, phase: 'signedOut', notice });
+      setState({ session: null, profile: null, settings: null, isAdmin: false, isOwner: false, phase: 'signedOut', notice });
     } else if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
       if (getState().phase === 'recovery') return;
       if (getState().profile?.id !== session.user.id || getState().phase !== 'ready') {
@@ -119,6 +120,7 @@ function page(route) {
     case 'moderation': return html`<${ModerationPage} />`;
     case 'r': return html`<${SharePage} code=${id} key=${id} />`;
     case 'insights': return html`<${InsightsPage} />`;
+    case 'banned': return html`<${BannedPage} />`;
     default: return html`<${Empty} icon="search" title="Page not found" action="Go home" onAction=${() => { window.location.hash = '/'; }} />`;
   }
 }
@@ -168,7 +170,11 @@ function Shell({ route }) {
       <a class="brand" href="#/"><img src="icon.png" alt="" /><span>RATE IT</span></a>
       <a class="icon-btn" href="#/notifications" aria-label="Notifications"><${Icon} name="bell" />${badge}</a>
     </header>
-    <main class="content">${page(route)}</main>
+    <main class="content">
+      ${banLabel(store.profile) ? html`<p class="ban-notice" role="status">Your account is suspended for breaking the community rules
+        (${banLabel(store.profile).replace('Banned ', '')}). You can look around, but you can't post, rate, like, comment or follow.</p>` : null}
+      ${page(route)}
+    </main>
     <nav class="tabbar">
       ${tabs.map(([name, label, icon]) => html`<a href=${`#/${name}`} class=${active(name) ? 'on' : ''}
         aria-current=${active(name) ? 'page' : null}><${Icon} name=${icon} /><span>${label}</span></a>`)}

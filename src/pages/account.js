@@ -7,6 +7,7 @@ import { html } from '../lib/html.js';
 import { disablePush, enablePush, pushEnabled, pushSupport } from '../lib/push.js';
 import { bumpVersion, setState, useStore } from '../lib/store.js';
 import { Avatar, Confirm, Empty, ErrorState, Icon, Modal, Photo, Spinner, toast } from '../components/ui.js';
+import { BanDialog, banLabel } from '../components/ban.js';
 
 /** "Push notifications on this device": subscribes this browser to Web Push. */
 function PushRow() {
@@ -85,6 +86,7 @@ export function SettingsPage() {
       <h3>Admin</h3>
       <a class="link-row" href="#/moderation"><span><${Icon} name="shield" size=${18} /> Moderation queue</span><span>›</span></a>
       <a class="link-row" href="#/insights"><span><${Icon} name="chart" size=${18} /> Insights</span><span>›</span></a>
+      ${store.isOwner ? html`<a class="link-row" href="#/banned"><span><${Icon} name="shield2" size=${18} /> Banned accounts</span><span>›</span></a>` : null}
     </section>` : null}
     <section class="group">
       <button class="link-row" onClick=${() => setDialog('blocked')}><span>Blocked users</span><span>›</span></button>
@@ -197,7 +199,19 @@ export function ModerationPage() {
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(null);
+  const [banning, setBanning] = useState(null);
   const load = () => { setError(null); api.openReports().then(setItems).catch((e) => setError(describeError(e))); };
+
+  // Owner: ban the author for the chosen length, then remove the reported content and close its reports.
+  async function banned(item) {
+    setBanning(null);
+    try {
+      await api.resolveReport(item, 'remove');
+      setItems(items.filter((i) => !(i.target_id === item.target_id && i.target_type === item.target_type)));
+    } catch (e) {
+      toast(describeError(e));
+    }
+  }
   useEffect(() => { load(); }, []);
 
   async function resolve() {
@@ -234,13 +248,48 @@ export function ModerationPage() {
               <button class="btn ghost small" onClick=${() => setConfirming({ item, action: 'dismiss' })}>Keep</button>
               ${item.author_id ? html`
                 <button class="btn ghost small warn" onClick=${() => setConfirming({ item, action: 'remove' })}>Remove</button>
-                <button class="btn ghost small danger-text" onClick=${() => setConfirming({ item, action: 'ban' })}>Ban</button>` : null}
+                ${store.isOwner ? html`<button class="btn ghost small danger-text" onClick=${() => setBanning(item)}>Ban</button>` : null}` : null}
             </div>
           </div>
         </div>`)}
+    ${banning ? html`<${BanDialog} username=${banning.author_username} userId=${banning.author_id}
+        onClose=${() => setBanning(null)} onBanned=${() => banned(banning)} />` : null}
     ${confirming ? html`<${Confirm} title=${titles[confirming.action]} danger=${confirming.action !== 'dismiss'}
         confirmLabel=${{ dismiss: 'Keep it', remove: 'Remove', ban: 'Remove and ban' }[confirming.action]}
         onConfirm=${resolve} onCancel=${() => setConfirming(null)} />` : null}
   </div>`;
 }
 
+/** Owner only: everyone who's banned right now, with when it ends and a way to lift it. */
+export function BannedPage() {
+  const store = useStore();
+  const [list, setList] = useState(null);
+  const [error, setError] = useState(null);
+  const load = () => { setError(null); api.bannedAccounts().then(setList).catch((e) => setError(describeError(e))); };
+  useEffect(() => { if (store.isOwner) load(); }, [store.isOwner]);
+
+  async function unban(person) {
+    try {
+      await api.ownerUnban(person.id);
+      setList(list.filter((p) => p.id !== person.id));
+      toast(`@${person.username} is unbanned`);
+    } catch (e) {
+      toast(describeError(e));
+    }
+  }
+
+  if (!store.isOwner) return html`<${Empty} icon="shield" title="Owner only" />`;
+  return html`<div class="page narrow">
+    <h1 class="page-title">Banned accounts</h1>
+    ${error ? html`<${ErrorState} message=${error} onRetry=${load} />` : !list ? html`<${Spinner} />`
+      : list.length === 0 ? html`<${Empty} icon="shield" title="Nobody is banned" message="Ban someone from their profile or the moderation queue." />`
+      : html`<ul class="people banned-list">${list.map((p) => html`<li>
+          <a href=${`#/u/${p.id}`}><${Avatar} url=${api.avatarUrl(p.avatar_path)} name=${p.username} size=${40} /></a>
+          <span class="who"><a href=${`#/u/${p.id}`}><strong>@${p.username}</strong></a>
+            <small class="ban-status">${banLabel(p) || 'Ban ended'}</small>
+            ${p.ban_reason ? html`<small class="muted">${p.ban_reason}</small>` : null}
+            ${p.email ? html`<small class="muted">${p.email}</small>` : null}</span>
+          <button class="btn ghost small" onClick=${() => unban(p)}>Unban</button>
+        </li>`)}</ul>`}
+  </div>`;
+}
