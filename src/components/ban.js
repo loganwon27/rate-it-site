@@ -10,10 +10,21 @@ const LENGTHS = [
   ['1 hour', HOUR], ['1 day', DAY], ['3 days', 3 * DAY], ['1 week', 7 * DAY], ['30 days', 30 * DAY], ['Forever', null],
 ];
 
-/** "Banned until Oct 10, 3:00 PM" / "Banned forever" / null when not banned (a run-out ban doesn't count). */
+/** Forever bans delete the account this long after the ban (the database's ban_deletes_at matches). */
+const DELETE_AFTER = 30 * DAY;
+
+/** When a forever ban deletes the account, or null for a timed ban / no ban. */
+export function banDeletesAt(profile) {
+  if (!profile?.banned_at || profile.banned_until) return null;
+  return new Date(new Date(profile.banned_at).getTime() + DELETE_AFTER);
+}
+
+export const shortDate = (date) => date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+/** "Banned until Oct 10, 3:00 PM" / "Banned forever · account deletes Nov 2" / null when not banned. */
 export function banLabel(profile) {
   if (!profile?.banned_at) return null;
-  if (!profile.banned_until) return 'Banned forever';
+  if (!profile.banned_until) return `Banned forever · account deletes ${shortDate(banDeletesAt(profile))}`;
   const until = new Date(profile.banned_until);
   if (until <= new Date()) return null;
   return `Banned until ${until.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
@@ -49,6 +60,8 @@ export function BanDialog({ username, userId, onClose, onBanned }) {
   return html`<${Modal} title=${`Ban @${username}`} onClose=${onClose}>
     <p class="muted">They won't be able to post, rate, like, comment or follow, and their profile and posts are hidden
       until the ban ends. Timed bans lift on their own.</p>
+    ${choice === 'Forever' ? html`<p class="notice">A forever ban <strong>permanently deletes the account after 30 days</strong> (photos, ratings, comments,
+      everything). Unban before then to stop it.</p>` : null}
     <label class="label">How long</label>
     <div class="chips wrap" role="radiogroup" aria-label="Ban length">
       ${[...LENGTHS.map(([label]) => label), 'Custom'].map((label) => html`<${Chip} label=${label} selected=${choice === label}

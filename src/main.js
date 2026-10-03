@@ -14,7 +14,7 @@ import { CreatePage } from './pages/create.js';
 import { BannedPage, ModerationPage, NotificationsPage, SettingsPage } from './pages/account.js';
 import { InsightsPage } from './pages/insights.js';
 import { SharePage, submitPendingShareRating } from './pages/share.js';
-import { banLabel } from './components/ban.js';
+import { banDeletesAt, banLabel, shortDate } from './components/ban.js';
 import { refreshPush } from './lib/push.js';
 
 // ---------- Email links ----------
@@ -171,8 +171,9 @@ function Shell({ route }) {
       <a class="icon-btn" href="#/notifications" aria-label="Notifications"><${Icon} name="bell" />${badge}</a>
     </header>
     <main class="content">
-      ${banLabel(store.profile) ? html`<p class="ban-notice" role="status">Your account is suspended for breaking the community rules
-        (${banLabel(store.profile).replace('Banned ', '')}). You can look around, but you can't post, rate, like, comment or follow.</p>` : null}
+      ${banLabel(store.profile) ? html`<p class="ban-notice" role="status">${banDeletesAt(store.profile)
+        ? `Your account is banned for breaking the community rules and will be permanently deleted on ${shortDate(banDeletesAt(store.profile))}.`
+        : `Your account is suspended for breaking the community rules (${banLabel(store.profile).replace('Banned ', '')}).`}${' '}You can look around, but you can't post, rate, like, comment or follow.</p>` : null}
       ${page(route)}
     </main>
     <nav class="tabbar">
