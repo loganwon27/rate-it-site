@@ -186,11 +186,11 @@ function ProfileMenu({ username, canBan, banned, onReport, onBlock, onBan, onUnb
   return html`<div class="menu-wrap profile-menu">
     <button class="icon-btn" aria-label="More" aria-expanded=${open} onClick=${() => setOpen(!open)}><${Icon} name="more" /></button>
     ${open ? html`<div class="menu" role="menu">
-      <button role="menuitem" onClick=${onReport}>Report profile</button>
-      <button role="menuitem" class="danger" onClick=${onBlock}>Block @${username}</button>
+      <button role="menuitem" onClick=${onReport} aria-label=${`Report @${username}`}>Report</button>
+      <button role="menuitem" class="danger" onClick=${onBlock} aria-label=${`Block @${username}`}>Block</button>
       ${canBan ? (banned
-        ? html`<button role="menuitem" onClick=${onUnban}>Unban @${username}</button>`
-        : html`<button role="menuitem" class="danger" onClick=${onBan}>Ban @${username}…</button>`) : null}
+        ? html`<button role="menuitem" onClick=${onUnban} aria-label=${`Unban @${username}`}>Unban</button>`
+        : html`<button role="menuitem" class="danger" onClick=${onBan} aria-label=${`Ban @${username}`}>Ban</button>`) : null}
     </div>` : null}
   </div>`;
 }
