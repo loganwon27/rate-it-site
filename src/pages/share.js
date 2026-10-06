@@ -101,7 +101,7 @@ export function SharePage({ code }) {
         <span class="chip">${post.category}</span>
       </header>
       <div class="share-photo" style=${`aspect-ratio:${post.image_width} / ${post.image_height}`}>
-        <${Photo} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
+        <${Photo} eager=${true} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
       </div>
       ${post.caption ? html`<p class="share-caption">${post.caption}</p>` : null}
       ${picked == null ? html`<div class="rate-area">

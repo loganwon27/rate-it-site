@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { html } from '../lib/html.js';
 
 export function Icon({ name, size = 22 }) {
@@ -34,20 +34,64 @@ export function Icon({ name, size = 22 }) {
 }
 
 export function Avatar({ url, name, size = 36 }) {
-  const [failed, setFailed] = useState(false);
+  // Remember which URL failed, so a new photo (after an edit) gets a fresh try.
+  const [failedUrl, setFailedUrl] = useState(null);
   const style = `width:${size}px;height:${size}px;font-size:${size * 0.42}px`;
-  if (url && !failed) {
-    return html`<img class="avatar" style=${style} src=${url} alt="" loading="lazy" onError=${() => setFailed(true)} />`;
+  if (url && failedUrl !== url) {
+    return html`<img class="avatar" style=${style} src=${url} alt="" loading="lazy" decoding="async" onError=${() => setFailedUrl(url)} />`;
   }
   return html`<span class="avatar avatar-fallback" style=${style} aria-hidden="true">${(name || '?')[0].toUpperCase()}</span>`;
 }
 
-export function Photo({ url, alt = '', className = '' }) {
-  const [state, setState] = useState('loading');
-  useEffect(() => setState('loading'), [url]);
-  return html`<div class=${`photo ${className} ${state}`}>
-    ${state === 'error' ? html`<span class="photo-error"><${Icon} name="photo" size=${28} /></span>` : null}
-    <img src=${url} alt=${alt} loading="lazy" onLoad=${() => setState('loaded')} onError=${() => setState('error')} />
+const RETRY_DELAYS = [1000, 3000, 7000];
+
+/**
+ * A photo that fades in once it's loaded, and always ends up visible:
+ * - the load state belongs to its URL, and a photo that's already downloaded (the feed pre-loads the next few)
+ *   is caught before paint, so it can't be reset to "loading" and stay invisible;
+ * - while loading it keeps checking the image itself, in case a browser skips the load event;
+ * - CSS reveals the image after a few seconds no matter what (see .photo in styles.css);
+ * - a failed load retries on its own (1s, 3s, 7s), again when the connection comes back, then offers a tap to retry.
+ * `eager` for the main photo on screen; grids load lazily.
+ */
+export function Photo({ url, alt = '', className = '', eager = false }) {
+  const fresh = { url, state: 'loading', attempt: 0 };
+  const [load, setLoad] = useState(fresh);
+  const current = load.url === url ? load : fresh;
+  const img = useRef(null);
+  const update = (changes) => setLoad((l) => ({ ...(l.url === url ? l : { url, state: 'loading', attempt: 0 }), ...changes }));
+
+  // Already loaded (from cache) before we were listening. Only ever concludes "loaded": Safari can report
+  // `complete` on an image that hasn't started downloading, so failures come from the error event alone.
+  const check = () => {
+    const el = img.current;
+    if (el && el.complete && el.naturalWidth > 0) update({ state: 'loaded' });
+  };
+  useLayoutEffect(check, [url, current.attempt]);
+  useEffect(() => {
+    if (current.state !== 'loading') return undefined;
+    const timer = setInterval(check, 400);
+    return () => clearInterval(timer);
+  }, [url, current.state, current.attempt]);
+
+  // Retry failures on their own, and as soon as the device is back online.
+  useEffect(() => {
+    if (current.state !== 'error') return undefined;
+    const again = () => update({ state: 'loading', attempt: current.attempt + 1 });
+    const timer = current.attempt < RETRY_DELAYS.length ? setTimeout(again, RETRY_DELAYS[current.attempt]) : null;
+    window.addEventListener('online', again);
+    return () => { clearTimeout(timer); window.removeEventListener('online', again); };
+  }, [url, current.state, current.attempt]);
+
+  const src = url && current.attempt > 0 ? `${url}${url.includes('?') ? '&' : '?'}retry=${current.attempt}` : url;
+  const gaveUp = current.state === 'error' && current.attempt >= RETRY_DELAYS.length;
+  const retry = (e) => { e.stopPropagation(); e.preventDefault(); update({ state: 'loading', attempt: current.attempt + 1 }); };
+  return html`<div class=${`photo ${className} ${current.state}`}>
+    ${gaveUp ? html`<button class="photo-error" onClick=${retry} aria-label="Photo didn't load. Tap to retry">
+      <${Icon} name="photo" size=${28} /><span class="small">Tap to retry</span></button>` : null}
+    <img ref=${img} key=${src} src=${src} alt=${alt} loading=${eager ? 'eager' : 'lazy'} decoding="async"
+      fetchpriority=${eager ? 'high' : 'auto'}
+      onLoad=${() => update({ state: 'loaded' })} onError=${() => update({ state: 'error' })} />
   </div>`;
 }
 

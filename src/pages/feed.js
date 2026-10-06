@@ -160,7 +160,7 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
     // Desktop: photo on the left, everything else beside it.
     return html`<article class="feed-split">
       <div class="split-photo" onDblClick=${doubleTap}>
-        <${Photo} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
+        <${Photo} eager=${true} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
         ${heart}
       </div>
       <div class="split-panel">
@@ -190,7 +190,7 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
   return html`<article class="feed-card">
     <${PostHeader} post=${post}><${PostMenu} post=${post} onGone=${onGone} /></${PostHeader}>
     <div class="feed-photo" onDblClick=${doubleTap}>
-      <${Photo} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
+      <${Photo} eager=${true} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
       <div class="photo-shade"></div>
       ${post.caption && !canSeeResults ? html`<p class="caption">${post.caption}</p>` : null}
       ${canSeeResults ? html`<div class="results-overlay"><${Results} stats=${stats} mine=${chosen} /></div>` : html`
@@ -248,7 +248,7 @@ function PostDetail({ initial, wide }) {
     return html`<div class="post-split">
       <div class="split-photo">
         <button class="link back overlay-back" onClick=${() => history.back()}><${Icon} name="back" size=${18} /> Back</button>
-        <${Photo} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
+        <${Photo} eager=${true} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
       </div>
       <aside class="split-panel detail">
         <div class="detail-top">
@@ -271,7 +271,7 @@ function PostDetail({ initial, wide }) {
     <button class="link back" onClick=${() => history.back()}><${Icon} name="back" size=${18} /> Back</button>
     <${PostHeader} post=${post}><${PostMenu} post=${post} onGone=${() => history.back()} /></${PostHeader}>
     ${hidden}
-    <div class="detail-photo"><${Photo} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} /></div>
+    <div class="detail-photo"><${Photo} eager=${true} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} /></div>
     <div class="detail-row">
       ${post.caption ? html`<p class="detail-caption">${post.caption}</p>` : html`<span></span>`}
       <div class="row">
