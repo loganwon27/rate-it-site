@@ -52,7 +52,7 @@ export function DiscoverPage() {
       ${CATEGORIES.map((c) => html`<${Chip} label=${c} selected=${category === c} onClick=${() => setCategory(category === c ? null : c)} />`)}
     </div>
     ${people.length ? html`<div class="people-row">
-      ${people.map((p) => html`<a class="person" href=${`#/u/${p.id}`}>
+      ${people.map((p) => html`<a class="person" key=${p.id} href=${`#/u/${p.id}`}>
         <${Avatar} url=${api.avatarUrl(p.avatar_path)} name=${p.username} size=${60} /><span>@${p.username}</span>
       </a>`)}
     </div>` : null}
@@ -205,7 +205,7 @@ function FollowList({ userId, kind, isMe, onClose }) {
   return html`<${Modal} title=${kind === 'followers' ? 'Followers' : 'Following'} onClose=${onClose}>
     ${error ? html`<p class="error">${error}</p>` : !people ? html`<${Spinner} />`
       : people.length === 0 ? html`<p class="muted center">${emptyMessage}</p>`
-      : html`<ul class="people">${people.map((p) => html`<li>
+      : html`<ul class="people">${people.map((p) => html`<li key=${p.id}>
           <a class="row" href=${`#/u/${p.id}`} onClick=${onClose}>
             <${Avatar} url=${api.avatarUrl(p.avatar_path)} name=${p.username} size=${40} />
             <span><strong>@${p.username}</strong>${p.bio ? html`<br /><small class="muted">${p.bio}</small>` : null}</span>

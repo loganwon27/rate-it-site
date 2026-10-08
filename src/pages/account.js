@@ -121,7 +121,7 @@ function BlockedUsers({ onClose }) {
   return html`<${Modal} title="Blocked users" onClose=${onClose}>
     ${error ? html`<p class="error">${error}</p>` : !people ? html`<${Spinner} />`
       : people.length === 0 ? html`<p class="muted center">No one blocked. People you block show up here.</p>`
-      : html`<ul class="people">${people.map((p) => html`<li>
+      : html`<ul class="people">${people.map((p) => html`<li key=${p.id}>
           <${Avatar} url=${api.avatarUrl(p.avatar_path)} name=${p.username} size=${36} /><strong>@${p.username}</strong>
           <button class="btn ghost small" onClick=${() => unblock(p)}>Unblock</button>
         </li>`)}</ul>`}
@@ -283,7 +283,7 @@ export function BannedPage() {
     <h1 class="page-title">Banned accounts</h1>
     ${error ? html`<${ErrorState} message=${error} onRetry=${load} />` : !list ? html`<${Spinner} />`
       : list.length === 0 ? html`<${Empty} icon="shield" title="Nobody is banned" message="Ban someone from their profile or the moderation queue." />`
-      : html`<ul class="people banned-list">${list.map((p) => html`<li>
+      : html`<ul class="people banned-list">${list.map((p) => html`<li key=${p.id}>
           <a href=${`#/u/${p.id}`}><${Avatar} url=${api.avatarUrl(p.avatar_path)} name=${p.username} size=${40} /></a>
           <span class="who"><a href=${`#/u/${p.id}`}><strong>@${p.username}</strong></a>
             <small class="ban-status">${banLabel(p) || 'Ban ended'}</small>

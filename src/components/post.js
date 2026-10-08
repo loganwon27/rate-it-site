@@ -394,7 +394,7 @@ export function ShareButton({ post, label = 'Share', className = 'action' }) {
 
 export function PostGrid({ posts }) {
   return html`<div class="grid">
-    ${posts.map((p) => html`<a class="grid-cell" href=${`#/p/${p.id}`} aria-label=${`${p.category} post${p.caption ? `: ${p.caption}` : ''}`}>
+    ${posts.map((p) => html`<a class="grid-cell" key=${p.id} href=${`#/p/${p.id}`} aria-label=${`${p.category} post${p.caption ? `: ${p.caption}` : ''}`}>
       <${Photo} url=${api.postThumb(p)} />
       ${p.rating_count > 0 ? html`<span class="grid-badge"><${Icon} name="star" size=${12} /> ${compact(p.rating_count)}</span>` : null}
     </a>`)}

@@ -81,7 +81,7 @@ export function InsightsPage() {
       <section class="panel">
         <div class="panel-head"><h2>Highest rated</h2><span class="muted small">3+ ratings</span></div>
         ${data.top_posts.length === 0 ? html`<p class="muted small">Nothing with 3 ratings yet.</p>`
-          : html`<div class="top-posts">${data.top_posts.map((p) => html`<a href=${`#/p/${p.id}`} title=${p.caption || p.category}>
+          : html`<div class="top-posts">${data.top_posts.map((p) => html`<a key=${p.id} href=${`#/p/${p.id}`} title=${p.caption || p.category}>
               <${Photo} url=${api.postThumb(p)} />
               <span class="score" style=${`color:${ratingColor(p.avg_score)}`}>${Number(p.avg_score).toFixed(1)}</span>
             </a>`)}</div>`}
