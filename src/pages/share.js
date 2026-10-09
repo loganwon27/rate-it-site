@@ -6,7 +6,7 @@ import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { setState, useStore } from '../lib/store.js';
 import { RatingBar } from '../components/post.js';
-import { Avatar, Badge, Empty, Photo, Spinner, toast } from '../components/ui.js';
+import { Avatar, Badge, Empty, Photo, Spinner, postPrompt, toast } from '../components/ui.js';
 
 const PENDING_KEY = 'pendingShareRating';
 const PENDING_MAX_AGE = 7 * 24 * 3600 * 1000;
@@ -105,7 +105,7 @@ export function SharePage({ code }) {
       </div>
       ${post.caption ? html`<p class="share-caption">${post.caption}</p>` : null}
       ${picked == null ? html`<div class="rate-area">
-          <div class="rate-head"><strong>What do you think?</strong>
+          <div class="rate-head"><strong>${postPrompt(post)}</strong>
             <span class="muted small">${post.rating_count} ${post.rating_count === 1 ? 'rating' : 'ratings'} so far</span></div>
           <${RatingBar} locked=${null} busy=${false} onRate=${pick} keyboard=${true} />
           <p class="muted small">Tap a number from 1 to 10.</p>

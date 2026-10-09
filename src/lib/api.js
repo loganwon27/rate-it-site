@@ -197,7 +197,7 @@ export async function post(id) {
 }
 
 /** Uploads a full-size image and a grid thumbnail, then creates the post. `image` is a 4:5 cropped canvas. */
-export async function createPost({ canvas, category, caption, showUsername }) {
+export async function createPost({ canvas, category, caption, prompt = '', showUsername }) {
   const id = await myId();
   const postId = crypto.randomUUID();
   const full = await canvasToJpeg(canvas, 1440, 0.82);
@@ -211,7 +211,7 @@ export async function createPost({ canvas, category, caption, showUsername }) {
     unwrap(await db.from('posts').insert({
       id: postId, image_path: fullPath, thumb_path: thumbPath,
       image_width: full.width, image_height: full.height,
-      category: category.trim(), caption: caption.trim(), show_username: showUsername,
+      category: category.trim(), caption: caption.trim(), prompt: prompt.trim(), show_username: showUsername,
     }));
   } catch (error) {
     await bucket.remove([fullPath, thumbPath]);

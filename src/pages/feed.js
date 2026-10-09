@@ -8,7 +8,7 @@ import { useStore } from '../lib/store.js';
 import {
   AnonymityToggle, CommentsModal, CommentsPanel, LikeButton, PostHeader, PostMenu, RatingBar, Results, ShareButton, usePost,
 } from '../components/post.js';
-import { Empty, ErrorState, Icon, Photo, useWide } from '../components/ui.js';
+import { Empty, ErrorState, Icon, Photo, postPrompt, useWide } from '../components/ui.js';
 
 /** Home: one post at a time. Rate it, see the results, go next. */
 export function FeedPage() {
@@ -148,7 +148,7 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
   const heart = html`<span class=${`heart-burst ${burst ? 'on' : ''}`} aria-hidden="true"><${Icon} name="heart" size=${96} /></span>`;
   const gave = html`<span class="gave">You gave it <strong style="color:var(--accent)">${chosen}</strong></span>`;
   const rateArea = html`<div class="rate-area">
-    <div class="rate-head"><strong>What do you think?</strong><${AnonymityToggle} /></div>
+    <div class="rate-head"><strong>${postPrompt(post)}</strong><${AnonymityToggle} /></div>
     <${RatingBar} locked=${chosen} busy=${busy} onRate=${state.rate} keyboard=${true} />
     <div class="rate-foot">
       <span class="muted small hint">${wide ? 'Press 1–9, or 0 for 10 · scroll or ↓ for next · ↑ back' : 'Tip: press 1–9 or 0 for 10'}</span>
@@ -238,7 +238,7 @@ function PostDetail({ initial, wide }) {
       ${chosen != null ? html`<p class="gave">You gave it <strong style="color:var(--accent)">${chosen}</strong></p>` : null}
       <${Results} stats=${stats} mine=${chosen} owner=${post.is_mine} />` : html`
       <div class="rate-area">
-        <div class="rate-head"><strong>What do you think?</strong><${AnonymityToggle} /></div>
+        <div class="rate-head"><strong>${postPrompt(post)}</strong><${AnonymityToggle} /></div>
         <${RatingBar} locked=${chosen} busy=${busy} onRate=${state.rate} keyboard=${true} />
         <p class="muted small">${compact(post.rating_count)} ${post.rating_count === 1 ? 'rating' : 'ratings'} so far</p>
       </div>`;

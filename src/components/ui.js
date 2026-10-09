@@ -95,7 +95,11 @@ export function Photo({ url, alt = '', className = '', eager = false }) {
   </div>`;
 }
 
-const BADGES = { founder: 'Founder', admin: 'Admin' };
+const BADGES = { founder: 'Founder', admin: 'Admin', friend: 'Founders-Friend' };
+
+/** The question above a post's rating bar: the poster's own, or the default. */
+export const DEFAULT_PROMPT = 'What do you think?';
+export const postPrompt = (post) => post?.prompt?.trim() || DEFAULT_PROMPT;
 
 /** The small public tag next to a team member's username. Renders nothing for everyone else. */
 export function Badge({ kind }) {

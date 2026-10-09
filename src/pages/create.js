@@ -7,7 +7,7 @@ import { loadBitmap } from '../lib/image.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, getState, setState } from '../lib/store.js';
 import { PostHeader, RatingBar } from '../components/post.js';
-import { Chip, Icon } from '../components/ui.js';
+import { Chip, DEFAULT_PROMPT, Icon, postPrompt } from '../components/ui.js';
 
 const ASPECT = 4 / 5;
 
@@ -16,7 +16,7 @@ export function CreatePage() {
   const [step, setStep] = useState('pick');
   const [bitmap, setBitmap] = useState(null);
   const [canvas, setCanvas] = useState(null);
-  const [details, setDetails] = useState({ category: '', caption: '', showUsername: true });
+  const [details, setDetails] = useState({ category: '', caption: '', prompt: '', showUsername: true });
   const [error, setError] = useState(null);
 
   async function pick(e) {
@@ -169,7 +169,8 @@ function CanvasImage({ canvas, className }) {
 function Details({ canvas, value, onChange, onBack, onNext }) {
   const [custom, setCustom] = useState(!CATEGORIES.includes(value.category) && value.category !== '');
   const set = (patch) => onChange({ ...value, ...patch });
-  const valid = value.category.trim().length > 0 && value.category.trim().length <= 24 && value.caption.length <= 200;
+  const valid = value.category.trim().length > 0 && value.category.trim().length <= 24 && value.caption.length <= 200
+    && value.prompt.length <= 60;
   return html`<div class="page narrow">
     <${StepHeader} title="Details" onBack=${onBack} />
     <${CanvasImage} canvas=${canvas} className="details-thumb" />
@@ -184,6 +185,10 @@ function Details({ canvas, value, onChange, onBack, onNext }) {
     <h3>Caption</h3>
     <textarea rows="2" maxlength="200" placeholder="Rate my new setup" value=${value.caption}
       onInput=${(e) => set({ caption: e.target.value })}></textarea>
+    <h3>Question</h3>
+    <input class="field" maxlength="60" placeholder=${DEFAULT_PROMPT} value=${value.prompt}
+      onInput=${(e) => set({ prompt: e.target.value })} aria-label="Question above the rating bar" />
+    <p class="muted small">What people see above the 1–10 bar. Leave it empty for "${DEFAULT_PROMPT}"</p>
     <label class="switch-row">
       <span><strong>Show my username</strong><br /><small class="muted">${value.showUsername
         ? 'People will see this is yours.' : "Posted anonymously — it won't appear on your profile to others."}</small></span>
@@ -201,7 +206,7 @@ function Preview({ canvas, details, onBack }) {
   const fake = {
     id: 'preview', author_id: details.showUsername ? me?.id : null, author_username: details.showUsername ? me?.username : null,
     author_avatar_path: details.showUsername ? me?.avatar_path : null, category: details.category.trim(),
-    caption: details.caption.trim(), created_at: new Date().toISOString(), like_count: 0, comment_count: 0,
+    caption: details.caption.trim(), prompt: details.prompt.trim(), created_at: new Date().toISOString(), like_count: 0, comment_count: 0,
   };
 
   async function post() {
@@ -228,7 +233,7 @@ function Preview({ canvas, details, onBack }) {
         ${fake.caption ? html`<p class="caption">${fake.caption}</p>` : null}
       </div>
       <div class="rate-area">
-        <div class="rate-head"><strong>What do you think?</strong></div>
+        <div class="rate-head"><strong>${postPrompt(fake)}</strong></div>
         <${RatingBar} locked=${null} busy=${true} onRate=${() => {}} />
       </div>
     </article>
