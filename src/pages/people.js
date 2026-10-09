@@ -6,7 +6,7 @@ import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, setState, useStore } from '../lib/store.js';
 import { GridSkeleton, PostGrid, ReportModal } from '../components/post.js';
-import { BanDialog, banLabel } from '../components/ban.js';
+import { BanDialog, RoleDialog, banLabel } from '../components/ban.js';
 import { Avatar, Badge, Chip, Confirm, Empty, ErrorState, Icon, Modal, Spinner, toast, useWide } from '../components/ui.js';
 
 export function DiscoverPage() {
@@ -154,7 +154,7 @@ export function ProfilePage({ id }) {
           </div>`}
       ${isMe ? null : html`<${ProfileMenu} username=${profile.username} canBan=${store.isOwner} banned=${Boolean(banLabel(profile))}
           onReport=${() => setDialog('report')} onBlock=${() => setDialog('block')}
-          onBan=${() => setDialog('ban')} onUnban=${unban} />`}
+          onBan=${() => setDialog('ban')} onUnban=${unban} onRole=${() => setDialog('role')} />`}
     </div>
     ${!posts ? html`<${GridSkeleton} count=${6} />`
       : posts.length === 0 ? html`<${Empty} icon="camera" title="Nothing here yet."
@@ -168,6 +168,8 @@ export function ProfilePage({ id }) {
     ${dialog === 'report' ? html`<${ReportModal} target="profile" id=${userId} onClose=${() => setDialog(null)} />` : null}
     ${dialog === 'ban' ? html`<${BanDialog} username=${profile.username} userId=${userId} onClose=${() => setDialog(null)}
         onBanned=${(until) => { setDialog(null); setProfile({ ...profile, banned_at: new Date().toISOString(), banned_until: until }); }} />` : null}
+    ${dialog === 'role' ? html`<${RoleDialog} username=${profile.username} userId=${userId} current=${profile.badge}
+        onClose=${() => setDialog(null)} onSaved=${(badge) => { setDialog(null); setProfile({ ...profile, badge }); }} />` : null}
     ${dialog === 'block' ? html`<${Confirm} title=${`Block @${profile.username}?`}
         message="You won't see each other's posts, and they won't be able to follow you."
         confirmLabel="Block" onConfirm=${block} onCancel=${() => setDialog(null)} />` : null}
@@ -175,7 +177,7 @@ export function ProfilePage({ id }) {
 }
 
 /** The ⋯ menu in a profile's top-right corner: Report, Block, and (owner only) Ban / Unban. */
-function ProfileMenu({ username, canBan, banned, onReport, onBlock, onBan, onUnban }) {
+function ProfileMenu({ username, canBan, banned, onReport, onBlock, onBan, onUnban, onRole }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return undefined;
@@ -191,6 +193,7 @@ function ProfileMenu({ username, canBan, banned, onReport, onBlock, onBan, onUnb
       ${canBan ? (banned
         ? html`<button role="menuitem" onClick=${onUnban} aria-label=${`Unban @${username}`}>Unban</button>`
         : html`<button role="menuitem" class="danger" onClick=${onBan} aria-label=${`Ban @${username}`}>Ban</button>`) : null}
+      ${canBan ? html`<button role="menuitem" onClick=${onRole} aria-label=${`Role for @${username}`}>Role</button>` : null}
     </div>` : null}
   </div>`;
 }

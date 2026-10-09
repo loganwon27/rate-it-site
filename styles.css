@@ -709,3 +709,10 @@ h1 .role-tag { font-size: 12px; padding: 2px 9px; vertical-align: 5px; margin-le
 /* Profile ⋯ menu, top-right of the profile header */
 .profile-head { position: relative; }
 .profile-menu { position: absolute; top: 0; right: 0; }
+
+/* Founders: role picker */
+.role-options { display: grid; gap: 8px; margin-bottom: 12px; }
+.role-option { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; text-align: left;
+  border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--text); cursor: pointer; }
+.role-option .role-tag { margin-left: 0; }
+.role-option.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }

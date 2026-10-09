@@ -161,6 +161,11 @@ export async function ownerUnban(userId) {
   unwrap(await db.rpc('owner_unban', { p_user: userId }));
 }
 
+/** Founders only: 'founder' | 'admin' | 'friend' | 'none'. Sets the powers and the tag together. */
+export async function ownerSetRole(userId, role) {
+  unwrap(await db.rpc('owner_set_role', { p_user: userId, p_role: role }));
+}
+
 export async function bannedAccounts() {
   return unwrap(await db.rpc('owner_banned_accounts'));
 }

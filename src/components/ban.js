@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import * as api from '../lib/api.js';
 import { describeError } from '../lib/backend.js';
 import { html } from '../lib/html.js';
-import { Chip, Modal, toast } from './ui.js';
+import { Badge, Chip, Modal, toast } from './ui.js';
 
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
@@ -76,6 +76,51 @@ export function BanDialog({ username, userId, onClose, onBanned }) {
       <button class="btn ghost" onClick=${onClose}>Cancel</button>
       <button class="btn danger" disabled=${!valid || busy} onClick=${ban}>
         ${busy ? 'Banning…' : choice === 'Forever' ? 'Ban forever' : 'Ban'}</button>
+    </div>
+  </${Modal}>`;
+}
+
+const ROLES = [
+  ['founder', 'Founder', 'Can ban, give roles, moderate and see insights.'],
+  ['admin', 'Admin', 'Can moderate reports and see insights.'],
+  ['friend', 'Founders-Friend', 'Just the tag, no extra powers.'],
+  ['none', 'None', 'No tag, no extra powers.'],
+];
+
+/** Founders only: give someone a role (its powers and its tag). `onSaved(badge | null)` runs after it's saved. */
+export function RoleDialog({ username, userId, current, onClose, onSaved }) {
+  const [role, setRole] = useState(current || 'none');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.ownerSetRole(userId, role);
+      const label = ROLES.find(([key]) => key === role)[1];
+      toast(role === 'none' ? `@${username} has no role now` : `@${username} is now ${label}`);
+      onSaved(role === 'none' ? null : role);
+    } catch (e) {
+      setError(describeError(e));
+      setBusy(false);
+    }
+  }
+
+  return html`<${Modal} title=${`Role for @${username}`} onClose=${onClose}>
+    <div class="role-options" role="radiogroup" aria-label="Role">
+      ${ROLES.map(([key, label, about]) => html`<button key=${key} role="radio" aria-checked=${role === key}
+          class=${`role-option ${role === key ? 'selected' : ''}`} onClick=${() => setRole(key)}>
+        <span>${key === 'none' ? html`<strong>${label}</strong>` : html`<${Badge} kind=${key} />`}</span>
+        <small class="muted">${about}</small>
+      </button>`)}
+    </div>
+    ${role === 'founder' && current !== 'founder' ? html`<p class="notice">Founders have the same powers as you, including
+      banning and giving roles. Only make someone a founder if you fully trust them.</p>` : null}
+    ${error ? html`<p class="error">${error}</p>` : null}
+    <div class="row end">
+      <button class="btn ghost" onClick=${onClose}>Cancel</button>
+      <button class="btn primary" disabled=${busy || role === (current || 'none')} onClick=${save}>${busy ? 'Saving…' : 'Save'}</button>
     </div>
   </${Modal}>`;
 }
