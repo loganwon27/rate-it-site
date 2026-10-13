@@ -279,6 +279,9 @@ label.field input { flex: 1; min-width: 0; background: none; border: 0; outline:
 .action:active { transform: scale(0.9); }
 .action.liked { color: var(--danger); }
 .action.liked .icon { fill: currentColor; }
+.action.disliked { color: var(--accent); }
+.action.disliked .icon { fill: currentColor; }
+.action:disabled { cursor: default; opacity: 1; }
 .detail-row .action, .after-rating .action { flex-direction: row; gap: 6px; font-size: 15px; text-shadow: none; }
 .heart-burst {
   position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; color: #fff;

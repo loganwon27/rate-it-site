@@ -5,7 +5,7 @@ import { ago, compact, plural, ratingColor, REPORT_REASONS } from '../lib/format
 import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, getState, setState } from '../lib/store.js';
-import { Avatar, Confirm, Empty, Icon, Modal, Photo, Spinner, toast, Badge } from './ui.js';
+import { Avatar, BodyPortal, Confirm, Empty, Icon, Modal, Photo, Spinner, toast, Badge } from './ui.js';
 import { MentionField, RichText } from './richtext.js';
 
 /** One post plus everything you can do to it — the web twin of the iOS PostState. */
@@ -54,9 +54,12 @@ export function usePost(initial) {
     }
   }
 
+  // Liking and disliking are exclusive: one replaces the other (the database does the same).
   async function toggleLike() {
     const liked = post.liked_by_me;
-    setPost({ ...post, liked_by_me: !liked, like_count: post.like_count + (liked ? -1 : 1) });
+    const undo = post.disliked_by_me && !liked;
+    setPost({ ...post, liked_by_me: !liked, like_count: post.like_count + (liked ? -1 : 1),
+      disliked_by_me: false, dislike_count: (post.dislike_count ?? 0) - (undo ? 1 : 0) });
     try {
       if (liked) await api.unlike(post.id);
       else await api.like(post.id);
@@ -66,7 +69,22 @@ export function usePost(initial) {
     }
   }
 
-  return { post, setPost, stats, chosen, busy, canSeeResults, rate, toggleLike };
+  async function toggleDislike() {
+    if (post.is_mine) return;
+    const disliked = post.disliked_by_me;
+    const undo = post.liked_by_me && !disliked;
+    setPost({ ...post, disliked_by_me: !disliked, dislike_count: (post.dislike_count ?? 0) + (disliked ? -1 : 1),
+      liked_by_me: false, like_count: post.like_count - (undo ? 1 : 0) });
+    try {
+      if (disliked) await api.undislike(post.id);
+      else await api.dislike(post.id);
+    } catch (error) {
+      setPost({ ...post });
+      toast(describeError(error));
+    }
+  }
+
+  return { post, setPost, stats, chosen, busy, canSeeResults, rate, toggleLike, toggleDislike };
 }
 
 /** Ten cells. Click a number, or press and slide across them and let go. Keys 1–9 and 0 (=10) work too. */
@@ -177,6 +195,44 @@ export function LikeButton({ post, onToggle }) {
       aria-label=${post.liked_by_me ? 'Unlike' : 'Like'} aria-pressed=${post.liked_by_me}>
     <${Icon} name="heart" /><span>${compact(post.like_count)}</span>
   </button>`;
+}
+
+/**
+ * Like and dislike, with both counts. On your own post the heart opens who liked it (only you can see that),
+ * and the dislike count is just a number: nobody can see who disliked a post.
+ */
+export function Reactions({ state }) {
+  const { post } = state;
+  const [showLikers, setShowLikers] = useState(false);
+  const like = post.is_mine
+    ? html`<button class=${`action ${post.liked_by_me ? 'liked' : ''}`} onClick=${() => setShowLikers(true)}
+        aria-label=${`${plural(post.like_count, 'like')}. See who liked`}>
+        <${Icon} name="heart" /><span>${compact(post.like_count)}</span></button>`
+    : html`<${LikeButton} post=${post} onToggle=${state.toggleLike} />`;
+  const dislike = html`<button class=${`action dislike ${post.disliked_by_me ? 'disliked' : ''}`}
+      onClick=${state.toggleDislike} disabled=${post.is_mine} aria-pressed=${Boolean(post.disliked_by_me)}
+      aria-label=${post.is_mine ? plural(post.dislike_count ?? 0, 'dislike') : post.disliked_by_me ? 'Remove dislike' : 'Dislike'}>
+    <${Icon} name="dislike" /><span>${compact(post.dislike_count ?? 0)}</span>
+  </button>`;
+  return html`${like}${dislike}${showLikers ? html`<${BodyPortal}>
+    <${LikersModal} post=${post} onClose=${() => setShowLikers(false)} /></${BodyPortal}>` : null}`;
+}
+
+/** The creator's list of who liked their post. */
+function LikersModal({ post, onClose }) {
+  const [people, setPeople] = useState(null);
+  const [error, setError] = useState(null);
+  useEffect(() => { api.postLikers(post.id).then(setPeople).catch((e) => setError(describeError(e))); }, [post.id]);
+  return html`<${Modal} title="Liked by" onClose=${onClose}>
+    <p class="muted small">Only you can see who liked your post. Nobody can see who disliked it.</p>
+    ${error ? html`<p class="error">${error}</p>` : !people ? html`<${Spinner} />`
+      : people.length === 0 ? html`<p class="muted center">No likes yet.</p>`
+      : html`<ul class="people">${people.map((p) => html`<li key=${p.id}>
+          <a class="row" href=${`#/u/${p.id}`} onClick=${onClose}>
+            <${Avatar} url=${api.avatarUrl(p.avatar_path)} name=${p.username} size=${40} />
+            <span><strong>@${p.username}</strong><${Badge} kind=${p.badge} /><br /><small class="muted">${ago(p.liked_at)}</small></span>
+          </a></li>`)}</ul>`}
+  </${Modal}>`;
 }
 
 /** "Anonymous" / "Public" pill. Remembers the choice for every rating. */

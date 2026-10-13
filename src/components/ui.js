@@ -1,3 +1,4 @@
+import { render } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { html } from '../lib/html.js';
 
@@ -12,6 +13,7 @@ export function Icon({ name, size = 22 }) {
     gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14.5 3h-5l-.4 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2l.4 2.6h5l.4-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z',
     heart: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z',
     comment: 'M4 5h16v11H9l-5 4z',
+    dislike: 'M10 15v4a3 3 0 0 0 3 3l4-9V2H5.7a2 2 0 0 0-2 1.7l-1.4 9a2 2 0 0 0 2 2.3zM17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3',
     more: 'M5 12h.01M12 12h.01M19 12h.01',
     back: 'M15 5l-7 7 7 7',
     search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zm9 3-4.3-4.3',
@@ -128,6 +130,21 @@ export function ErrorState({ message, onRetry }) {
 
 export function Chip({ label, selected, onClick }) {
   return html`<button class=${`chip ${selected ? 'selected' : ''}`} onClick=${onClick} aria-pressed=${selected}>${label}</button>`;
+}
+
+/**
+ * Renders `children` at the end of <body>, outside every container (so a modal opened from inside a post card
+ * isn't clipped or positioned by it).
+ */
+export function BodyPortal({ children }) {
+  const host = useRef(null);
+  if (!host.current) host.current = document.createElement('div');
+  useEffect(() => {
+    document.body.appendChild(host.current);
+    return () => { render(null, host.current); host.current.remove(); };
+  }, []);
+  useEffect(() => { render(children, host.current); });
+  return null;
 }
 
 export function Modal({ title, onClose, children, wide = false }) {

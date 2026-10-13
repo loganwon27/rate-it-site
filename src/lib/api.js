@@ -300,6 +300,21 @@ export async function unlike(postId) {
   unwrap(await db.from('likes').delete().eq('post_id', postId).eq('user_id', id));
 }
 
+/** Dislikes are private: only the count is public, and nobody (not even the creator) sees who. */
+export async function dislike(postId) {
+  unwrap(await db.from('dislikes').insert({ post_id: postId }));
+}
+
+export async function undislike(postId) {
+  const id = await myId();
+  unwrap(await db.from('dislikes').delete().eq('post_id', postId).eq('user_id', id));
+}
+
+/** Only the post's creator can see who liked it. */
+export async function postLikers(postId) {
+  return unwrap(await db.rpc('post_likers', { p_post: postId }));
+}
+
 const COMMENT_COLUMNS = 'id, post_id, user_id, body, created_at, author:profiles(username, avatar_path, badge)';
 
 export async function comments(postId) {

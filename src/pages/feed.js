@@ -6,7 +6,7 @@ import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { useStore } from '../lib/store.js';
 import {
-  AnonymityToggle, CommentsModal, CommentsPanel, LikeButton, PostHeader, PostMenu, RatingBar, Results, ShareButton, usePost,
+  AnonymityToggle, CommentsModal, CommentsPanel, PostHeader, Reactions, PostMenu, RatingBar, Results, ShareButton, usePost,
 } from '../components/post.js';
 import { Empty, ErrorState, Icon, Photo, postPrompt, useWide } from '../components/ui.js';
 import { RichText } from '../components/richtext.js';
@@ -167,20 +167,20 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
       <div class="split-panel">
         <${PostHeader} post=${post}><${PostMenu} post=${post} onGone=${onGone} /></${PostHeader}>
         ${post.caption ? html`<h2 class="split-caption"><${RichText} text=${post.caption} /></h2>` : null}
-        <p class="muted small">${plural(post.rating_count, 'rating')} · ${plural(post.like_count, 'like')} · ${plural(post.comment_count, 'comment')}</p>
+        <p class="muted small">${plural(post.rating_count, 'rating')} · ${plural(post.like_count, 'like')} · ${plural(post.dislike_count ?? 0, 'dislike')} · ${plural(post.comment_count, 'comment')}</p>
         <div class="spacer"></div>
         ${canSeeResults ? html`
           ${gave}
           <${Results} stats=${stats} mine=${chosen} />
           <div class="split-actions">
-            <${LikeButton} post=${post} onToggle=${state.toggleLike} />
+            <${Reactions} state=${state} />
             ${commentButton(false)}
             <span class="spacer"></span>
             <button class="btn primary next" onClick=${onNext}>Next <${Icon} name="down" size=${18} /></button>
           </div>` : html`
           ${rateArea}
           <div class="split-actions">
-            <${LikeButton} post=${post} onToggle=${state.toggleLike} />
+            <${Reactions} state=${state} />
             ${commentButton(true)}
           </div>`}
       </div>
@@ -196,7 +196,7 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
       ${post.caption && !canSeeResults ? html`<p class="caption"><${RichText} text=${post.caption} /></p>` : null}
       ${canSeeResults ? html`<div class="results-overlay"><${Results} stats=${stats} mine=${chosen} /></div>` : html`
         <div class="photo-actions">
-          <${LikeButton} post=${post} onToggle=${state.toggleLike} />
+          <${Reactions} state=${state} />
           ${commentButton(true)}
         </div>`}
       ${heart}
@@ -204,7 +204,7 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
     ${canSeeResults ? html`<div class="after-rating">
         ${gave}
         <span class="spacer"></span>
-        <${LikeButton} post=${post} onToggle=${state.toggleLike} />
+        <${Reactions} state=${state} />
         ${commentButton(false)}
         <button class="btn primary next" onClick=${onNext}>Next <${Icon} name="down" size=${18} /></button>
       </div>` : rateArea}
@@ -257,7 +257,7 @@ function PostDetail({ initial, wide }) {
           ${hidden}
           ${post.caption ? html`<h2 class="split-caption"><${RichText} text=${post.caption} /></h2>` : null}
           <div class="split-actions">
-            <${LikeButton} post=${post} onToggle=${state.toggleLike} />
+            <${Reactions} state=${state} />
             <${ShareButton} post=${post} />
           </div>
           ${rating}
@@ -276,7 +276,7 @@ function PostDetail({ initial, wide }) {
     <div class="detail-row">
       ${post.caption ? html`<p class="detail-caption"><${RichText} text=${post.caption} /></p>` : html`<span></span>`}
       <div class="row">
-        <${LikeButton} post=${post} onToggle=${state.toggleLike} />
+        <${Reactions} state=${state} />
         <button class="action" onClick=${() => setShowComments(true)} aria-label="Comments">
           <${Icon} name="comment" /><span>${compact(post.comment_count)}</span>
         </button>
