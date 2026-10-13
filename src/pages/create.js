@@ -8,6 +8,7 @@ import { navigate } from '../lib/router.js';
 import { bumpVersion, getState, setState } from '../lib/store.js';
 import { PostHeader, RatingBar } from '../components/post.js';
 import { Chip, DEFAULT_PROMPT, Icon, postPrompt } from '../components/ui.js';
+import { MentionField, RichText } from '../components/richtext.js';
 
 const ASPECT = 4 / 5;
 
@@ -183,8 +184,9 @@ function Details({ canvas, value, onChange, onBack, onNext }) {
     ${custom ? html`<input class="field" placeholder="Name your category" maxlength="24" value=${value.category}
       onInput=${(e) => set({ category: e.target.value })} autofocus />` : null}
     <h3>Caption</h3>
-    <textarea rows="2" maxlength="200" placeholder="Rate my new setup" value=${value.caption}
-      onInput=${(e) => set({ caption: e.target.value })}></textarea>
+    <${MentionField} multiline=${true} rows="2" maxlength="200" placeholder="Rate my new setup" value=${value.caption}
+      onInput=${(caption) => set({ caption })} aria-label="Caption" />
+    <p class="muted small">Add #hashtags so people can find it, and @mention friends to let them know.</p>
     <h3>Question</h3>
     <input class="field" maxlength="60" placeholder=${DEFAULT_PROMPT} value=${value.prompt}
       onInput=${(e) => set({ prompt: e.target.value })} aria-label="Question above the rating bar" />
@@ -230,7 +232,7 @@ function Preview({ canvas, details, onBack }) {
       <div class="feed-photo">
         <${CanvasImage} canvas=${canvas} className="photo-img" />
         <div class="photo-shade"></div>
-        ${fake.caption ? html`<p class="caption">${fake.caption}</p>` : null}
+        ${fake.caption ? html`<p class="caption"><${RichText} text=${fake.caption} /></p>` : null}
       </div>
       <div class="rate-area">
         <div class="rate-head"><strong>${postPrompt(fake)}</strong></div>

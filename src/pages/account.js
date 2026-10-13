@@ -80,6 +80,7 @@ export function SettingsPage() {
       ${toggleRow('notify_follows', 'New followers')}
       ${toggleRow('notify_likes', 'Likes')}
       ${toggleRow('notify_comments', 'Comments')}
+      ${toggleRow('notify_mentions', 'Mentions')}
       ${toggleRow('notify_milestones', 'Rating milestones')}
     </section>
     ${store.isAdmin ? html`<section class="group">
@@ -173,13 +174,14 @@ export function NotificationsPage() {
     return {
       follow: `${name} followed you`, like: `${name} liked your post`, comment: `${name} commented on your post`,
       rating_milestone: `Your post reached ${n.data?.count ?? ''} ratings`,
+      mention: `${name} mentioned you in ${n.data?.comment_id ? 'a comment' : 'a post'}`,
     }[n.type];
   };
   return html`<div class="page narrow">
     <h1 class="page-title">Notifications</h1>
     ${error ? html`<${ErrorState} message=${error} onRetry=${load} />` : !items ? html`<${Spinner} />`
       : items.length === 0 ? html`<${Empty} icon="bell" title="No notifications yet"
-          message="When people follow you, like or comment on your posts, it'll show up here." />`
+          message="When people follow you, mention you, like or comment on your posts, it'll show up here." />`
       : html`<ul class="notes">${items.map((n) => html`<li class=${n.read_at ? '' : 'unread'}>
           <a href=${n.post_id ? `#/p/${n.post_id}` : n.actor ? `#/u/${n.actor.id}` : '#/notifications'}>
             ${n.type === 'rating_milestone'

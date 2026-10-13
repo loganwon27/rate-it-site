@@ -3,6 +3,7 @@
   --bg: #09090a;
   --surface: #161617;
   --raised: #212123;
+  --link: #8ab8ff;
   --line: rgba(255, 255, 255, 0.08);
   --text: #fff;
   --muted: #9e9ea0;
@@ -32,6 +33,7 @@
   --bg: #f4f4f6;
   --surface: #ffffff;
   --raised: #e9e9ec;
+  --link: #1f62c9;
   --line: rgba(0, 0, 0, 0.09);
   --text: #111113;
   --muted: #5f5f63;
@@ -54,6 +56,7 @@
     --bg: #f4f4f6;
     --surface: #ffffff;
     --raised: #e9e9ec;
+    --link: #1f62c9;
     --line: rgba(0, 0, 0, 0.09);
     --text: #111113;
     --muted: #5f5f63;
@@ -716,3 +719,35 @@ h1 .role-tag { font-size: 12px; padding: 2px 9px; vertical-align: 5px; margin-le
   border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--text); cursor: pointer; }
 .role-option .role-tag { margin-left: 0; }
 .role-option.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+
+/* ---------- Hashtags and @mentions ---------- */
+.hashtag, .mention { color: var(--link); font-weight: 600; }
+.hashtag:hover, .mention:hover { text-decoration: underline; }
+.caption .hashtag, .caption .mention, .split-caption .hashtag, .split-caption .mention { color: inherit; text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, .45); text-underline-offset: 3px; }
+.split-caption .hashtag, .split-caption .mention { text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
+
+.mention-field { position: relative; display: block; width: 100%; }
+.mention-field textarea, .mention-field input { width: 100%; }
+.comment-form .mention-field { flex: 1; min-width: 0; }
+.suggestions { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30; margin: 0; padding: 6px; list-style: none;
+  background: var(--raised); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 32px rgba(0, 0, 0, .35);
+  max-height: 264px; overflow-y: auto; }
+.comment-input .suggestions { top: auto; bottom: calc(100% + 6px); }
+.suggestions li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+.suggestions li.active, .suggestions li:hover { background: var(--surface); }
+.suggestions small { margin-left: auto; }
+.tag-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface);
+  font-weight: 800; color: var(--muted); }
+
+.tag-row { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 2px; }
+.tag-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; white-space: nowrap;
+  background: var(--surface); border: 1px solid var(--line); color: var(--text); font-weight: 700; font-size: 14px; }
+.tag-chip small { color: var(--muted); font-weight: 600; }
+.tag-chip:hover { border-color: var(--accent); }
+
+.hashtag-head { display: flex; align-items: center; gap: 16px; margin: 4px 0 18px; }
+.hashtag-head h1 { margin: 0; font-size: 28px; overflow-wrap: anywhere; }
+.hashtag-head p { margin: 2px 0 0; }
+.hashtag-icon { display: grid; place-items: center; flex: none; width: 72px; height: 72px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--line); font-size: 34px; font-weight: 800; color: var(--accent); }

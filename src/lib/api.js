@@ -121,10 +121,33 @@ export async function removeAvatar(path) {
 }
 
 export async function searchProfiles(query) {
-  const term = query.trim().toLowerCase().replace(/[%_]/g, '');
+  const term = query.trim().toLowerCase().replace(/^@+/, '').replace(/[%_]/g, '');
   if (!term) return [];
   return unwrap(await db.from('profiles').select('id, username, avatar_path, bio')
     .ilike('username', `%${term}%`).order('follower_count', { ascending: false }).limit(10));
+}
+
+/** Opens @username links. Null when there's no such (visible) account. */
+export async function profileByUsername(username) {
+  const rows = unwrap(await db.from('profiles').select('id').eq('username', username.toLowerCase()).limit(1));
+  return rows[0] ?? null;
+}
+
+// ---------- Hashtags ----------
+const cleanTag = (tag) => tag.trim().replace(/^#+/, '').toLowerCase();
+
+/** Tags starting with `query`, most used first. Empty query: the most used tags lately. */
+export async function searchHashtags(query = '', limit = 10) {
+  return unwrap(await db.rpc('search_hashtags', { p_query: cleanTag(query), p_limit: limit }));
+}
+
+/** A tag's posts: 'top' or 'new'. */
+export async function hashtagPosts(tag, mode = 'top', offset = 0) {
+  return unwrap(await db.rpc('hashtag_posts', { p_tag: cleanTag(tag), p_mode: mode, p_limit: 30, p_offset: offset }));
+}
+
+export async function hashtagPostCount(tag) {
+  return unwrap(await db.rpc('hashtag_post_count', { p_tag: cleanTag(tag) }));
 }
 
 export async function settings() {

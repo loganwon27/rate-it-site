@@ -9,6 +9,7 @@ import {
   AnonymityToggle, CommentsModal, CommentsPanel, LikeButton, PostHeader, PostMenu, RatingBar, Results, ShareButton, usePost,
 } from '../components/post.js';
 import { Empty, ErrorState, Icon, Photo, postPrompt, useWide } from '../components/ui.js';
+import { RichText } from '../components/richtext.js';
 
 /** Home: one post at a time. Rate it, see the results, go next. */
 export function FeedPage() {
@@ -165,7 +166,7 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
       </div>
       <div class="split-panel">
         <${PostHeader} post=${post}><${PostMenu} post=${post} onGone=${onGone} /></${PostHeader}>
-        ${post.caption ? html`<h2 class="split-caption">${post.caption}</h2>` : null}
+        ${post.caption ? html`<h2 class="split-caption"><${RichText} text=${post.caption} /></h2>` : null}
         <p class="muted small">${plural(post.rating_count, 'rating')} · ${plural(post.like_count, 'like')} · ${plural(post.comment_count, 'comment')}</p>
         <div class="spacer"></div>
         ${canSeeResults ? html`
@@ -192,7 +193,7 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
     <div class="feed-photo" onDblClick=${doubleTap}>
       <${Photo} eager=${true} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
       <div class="photo-shade"></div>
-      ${post.caption && !canSeeResults ? html`<p class="caption">${post.caption}</p>` : null}
+      ${post.caption && !canSeeResults ? html`<p class="caption"><${RichText} text=${post.caption} /></p>` : null}
       ${canSeeResults ? html`<div class="results-overlay"><${Results} stats=${stats} mine=${chosen} /></div>` : html`
         <div class="photo-actions">
           <${LikeButton} post=${post} onToggle=${state.toggleLike} />
@@ -254,7 +255,7 @@ function PostDetail({ initial, wide }) {
         <div class="detail-top">
           <${PostHeader} post=${post}><${PostMenu} post=${post} onGone=${() => history.back()} /></${PostHeader}>
           ${hidden}
-          ${post.caption ? html`<h2 class="split-caption">${post.caption}</h2>` : null}
+          ${post.caption ? html`<h2 class="split-caption"><${RichText} text=${post.caption} /></h2>` : null}
           <div class="split-actions">
             <${LikeButton} post=${post} onToggle=${state.toggleLike} />
             <${ShareButton} post=${post} />
@@ -273,7 +274,7 @@ function PostDetail({ initial, wide }) {
     ${hidden}
     <div class="detail-photo"><${Photo} eager=${true} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} /></div>
     <div class="detail-row">
-      ${post.caption ? html`<p class="detail-caption">${post.caption}</p>` : html`<span></span>`}
+      ${post.caption ? html`<p class="detail-caption"><${RichText} text=${post.caption} /></p>` : html`<span></span>`}
       <div class="row">
         <${LikeButton} post=${post} onToggle=${state.toggleLike} />
         <button class="action" onClick=${() => setShowComments(true)} aria-label="Comments">

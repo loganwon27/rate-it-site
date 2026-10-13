@@ -12,6 +12,7 @@ import { FeedPage, PostPage } from './pages/feed.js';
 import { DiscoverPage, ProfilePage } from './pages/people.js';
 import { CreatePage } from './pages/create.js';
 import { BannedPage, ModerationPage, NotificationsPage, SettingsPage } from './pages/account.js';
+import { HashtagPage, UsernamePage } from './pages/hashtag.js';
 import { InsightsPage } from './pages/insights.js';
 import { SharePage, submitPendingShareRating } from './pages/share.js';
 import { banDeletesAt, banLabel, shortDate } from './components/ban.js';
@@ -115,6 +116,8 @@ function page(route) {
     case 'me': return html`<${ProfilePage} />`;
     case 'u': return html`<${ProfilePage} id=${id} key=${id} />`;
     case 'p': return html`<${PostPage} id=${id} key=${id} />`;
+    case 'tag': return html`<${HashtagPage} tag=${id} key=${id} />`;
+    case 'user': return html`<${UsernamePage} username=${id} key=${id} />`;
     case 'settings': return html`<${SettingsPage} />`;
     case 'notifications': return html`<${NotificationsPage} />`;
     case 'moderation': return html`<${ModerationPage} />`;
@@ -139,6 +142,7 @@ function Shell({ route }) {
   const myId = store.profile?.id;
   const active = (name) => {
     if (name === 'me') return route.name === 'me' || (route.name === 'u' && route.params[0] === myId);
+    if (name === 'discover') return route.name === 'discover' || route.name === 'tag';
     return route.name === name;
   };
   const tabs = [

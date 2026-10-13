@@ -16,6 +16,7 @@ export function DiscoverPage() {
   const [query, setQuery] = useState('');
   const [posts, setPosts] = useState(null);
   const [people, setPeople] = useState([]);
+  const [tags, setTags] = useState([]);
   const [error, setError] = useState(null);
   const [attempt, setAttempt] = useState(0);
 
@@ -24,11 +25,14 @@ export function DiscoverPage() {
     const timer = setTimeout(async () => {
       setError(null);
       try {
-        const [found, matches] = await Promise.all([
+        const term = query.trim();
+        const [found, matches, tagMatches] = await Promise.all([
           api.discover({ mode, category, query }),
-          query.trim() ? api.searchProfiles(query).catch(() => []) : Promise.resolve([]),
+          term && !term.startsWith('#') ? api.searchProfiles(term).catch(() => []) : Promise.resolve([]),
+          // Typing a tag (or nothing): matching / popular hashtags. Typing @name: just people.
+          term.startsWith('@') ? Promise.resolve([]) : api.searchHashtags(term, 12).catch(() => []),
         ]);
-        if (!cancelled) { setPosts(found); setPeople(matches); }
+        if (!cancelled) { setPosts(found); setPeople(matches); setTags(tagMatches); }
       } catch (e) {
         if (!cancelled) setError(describeError(e));
       }
@@ -51,6 +55,9 @@ export function DiscoverPage() {
       <${Chip} label="All" selected=${!category} onClick=${() => setCategory(null)} />
       ${CATEGORIES.map((c) => html`<${Chip} label=${c} selected=${category === c} onClick=${() => setCategory(category === c ? null : c)} />`)}
     </div>
+    ${tags.length ? html`<div class="tag-row" aria-label=${query.trim() ? 'Hashtags' : 'Popular hashtags'}>
+      ${tags.map((t) => html`<a class="tag-chip" key=${t.tag} href=${`#/tag/${t.tag}`}>#${t.tag}<small>${compact(t.post_count)}</small></a>`)}
+    </div>` : null}
     ${people.length ? html`<div class="people-row">
       ${people.map((p) => html`<a class="person" key=${p.id} href=${`#/u/${p.id}`}>
         <${Avatar} url=${api.avatarUrl(p.avatar_path)} name=${p.username} size=${60} /><span>@${p.username}</span>

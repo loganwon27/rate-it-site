@@ -6,6 +6,7 @@ import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, getState, setState } from '../lib/store.js';
 import { Avatar, Confirm, Empty, Icon, Modal, Photo, Spinner, toast, Badge } from './ui.js';
+import { MentionField, RichText } from './richtext.js';
 
 /** One post plus everything you can do to it — the web twin of the iOS PostState. */
 export function usePost(initial) {
@@ -359,7 +360,7 @@ export function CommentsPanel({ post, onCountChange, onNavigate, inline = false 
             <div class="comment-body">
               <div><a href=${`#/u/${c.user_id}`} onClick=${onNavigate}><strong>@${c.author?.username ?? 'someone'}</strong></a><${Badge} kind=${c.author?.badge} />
                 <small class="muted"> ${ago(c.created_at)}</small></div>
-              <p>${c.body}</p>
+              <p><${RichText} text=${c.body} onNavigate=${onNavigate} /></p>
             </div>
             ${c.user_id === myId
               ? html`<button class="link small danger" onClick=${() => remove(c)}>Delete</button>`
@@ -367,7 +368,8 @@ export function CommentsPanel({ post, onCountChange, onNavigate, inline = false 
           </div>`)}
     </div>
     <form class="comment-form" onSubmit=${send}>
-      <input placeholder="Add a comment…" maxlength="500" value=${draft} onInput=${(e) => setDraft(e.target.value)} aria-label="Add a comment" />
+      <${MentionField} className="comment-input" placeholder="Add a comment…" maxlength="500" value=${draft} onInput=${setDraft}
+        aria-label="Add a comment" />
       <button class="btn primary" disabled=${!draft.trim() || sending}>Post</button>
     </form>
     ${reporting ? html`<${ReportModal} target="comment" id=${reporting.id} onClose=${() => setReporting(null)} />` : null}
