@@ -366,6 +366,15 @@ export function CommentsModal({ post, onClose, onCountChange }) {
   </${Modal}>`;
 }
 
+/** Top-level comments in order, each with its replies (oldest first). Replies whose comment is hidden are left out. */
+function threads(items) {
+  const replies = new Map();
+  for (const c of items) if (c.parent_id) replies.set(c.parent_id, [...(replies.get(c.parent_id) || []), c]);
+  return items.filter((c) => !c.parent_id).map((c) => ({ comment: c, replies: replies.get(c.id) || [] }));
+}
+
+const SHOWN_REPLIES = 2;
+
 /** The comment list and "Add a comment" box. In a modal on phones, beside the post on wide screens. */
 export function CommentsPanel({ post, onCountChange, onNavigate, inline = false }) {
   const [items, setItems] = useState(null);
@@ -373,11 +382,34 @@ export function CommentsPanel({ post, onCountChange, onNavigate, inline = false 
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [reporting, setReporting] = useState(null);
-  const listRef = useRef(null);
+  const [replyTo, setReplyTo] = useState(null);
+  const [expanded, setExpanded] = useState(() => new Set());
+  const panelRef = useRef(null);
   const myId = getState().profile?.id;
 
   const load = () => api.comments(post.id).then(setItems).catch((e) => setError(describeError(e)));
-  useEffect(() => { setItems(null); load(); }, [post.id]);
+  useEffect(() => { setItems(null); setReplyTo(null); load(); }, [post.id]);
+
+  const focusInput = () => requestAnimationFrame(() => {
+    const input = panelRef.current?.querySelector('.comment-input input');
+    if (!input) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  });
+
+  function startReply(comment) {
+    setReplyTo(comment);
+    const name = comment.author?.username;
+    // Start with "@name " like other apps, unless it's your own comment or the draft already has it.
+    if (name && comment.user_id !== myId && !draft.includes(`@${name}`)) setDraft(`@${name} ${draft}`.trimEnd() + ' ');
+    focusInput();
+  }
+
+  function cancelReply() {
+    const name = replyTo?.author?.username;
+    if (name && draft.trim() === `@${name}`) setDraft('');
+    setReplyTo(null);
+  }
 
   async function send(e) {
     e.preventDefault();
@@ -385,12 +417,15 @@ export function CommentsPanel({ post, onCountChange, onNavigate, inline = false 
     if (!body || body.length > 500) return;
     setSending(true);
     try {
-      const comment = await api.addComment(post.id, body);
+      const comment = await api.addComment(post.id, body, replyTo?.id);
       setItems([...(items || []), comment]);
+      if (comment.parent_id) setExpanded(new Set([...expanded, comment.parent_id]));
       setDraft('');
+      setReplyTo(null);
       onCountChange?.(1);
       // Show your new comment, even at the bottom of a long thread.
-      requestAnimationFrame(() => listRef.current?.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+      requestAnimationFrame(() => panelRef.current?.querySelector(`[data-comment="${comment.id}"]`)
+        ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
     } catch (err) {
       toast(describeError(err));
     }
@@ -400,34 +435,62 @@ export function CommentsPanel({ post, onCountChange, onNavigate, inline = false 
   async function remove(comment) {
     try {
       await api.deleteComment(comment.id);
-      setItems(items.filter((c) => c.id !== comment.id));
-      onCountChange?.(-1);
+      // Its replies go with it.
+      const gone = items.filter((c) => c.id === comment.id || c.parent_id === comment.id);
+      setItems(items.filter((c) => !gone.includes(c)));
+      if (replyTo && gone.includes(replyTo)) setReplyTo(null);
+      onCountChange?.(-gone.length);
     } catch (err) {
       toast(describeError(err));
     }
   }
 
-  return html`<div class=${`comments-panel ${inline ? 'inline' : ''}`}>
-    <div class="comments" ref=${listRef}>
+  const row = (c, reply = false) => html`<div class=${`comment ${reply ? 'reply' : ''}`} key=${c.id} data-comment=${c.id}>
+    <${Avatar} url=${api.avatarUrl(c.author?.avatar_path)} name=${c.author?.username} size=${reply ? 26 : 32} />
+    <div class="comment-body">
+      <div><a href=${`#/u/${c.user_id}`} onClick=${onNavigate}><strong>@${c.author?.username ?? 'someone'}</strong></a>${c.by_creator
+          ? html`<span class="role-tag creator" title="Posted this">Creator</span>` : null}<${Badge} kind=${c.author?.badge} />
+        <small class="muted"> ${ago(c.created_at)}</small></div>
+      <p><${RichText} text=${c.body} onNavigate=${onNavigate} /></p>
+      <div class="comment-actions">
+        <button class="link small" onClick=${() => startReply(c)}>Reply</button>
+        ${c.user_id === myId
+          ? html`<button class="link small danger" onClick=${() => remove(c)}>Delete</button>`
+          : html`<button class="link small" onClick=${() => setReporting(c)}>Report</button>`}
+      </div>
+    </div>
+  </div>`;
+
+  const thread = ({ comment, replies }) => {
+    const open = expanded.has(comment.id) || replies.length <= SHOWN_REPLIES + 1;
+    const shown = open ? replies : replies.slice(0, SHOWN_REPLIES);
+    return html`<div class="thread" key=${comment.id}>
+      ${row(comment)}
+      ${replies.length ? html`<div class="replies">
+        ${shown.map((r) => row(r, true))}
+        ${open ? null : html`<button class="link small more-replies" onClick=${() => setExpanded(new Set([...expanded, comment.id]))}>
+          View ${replies.length - shown.length} more ${replies.length - shown.length === 1 ? 'reply' : 'replies'}</button>`}
+      </div>` : null}
+    </div>`;
+  };
+
+  return html`<div class=${`comments-panel ${inline ? 'inline' : ''}`} ref=${panelRef}>
+    <div class="comments">
       ${error ? html`<p class="error">${error}</p>` : !items ? html`<${Spinner} />` : items.length === 0
         ? html`<p class="muted center">No comments yet. Start the conversation.</p>`
-        : items.map((c) => html`<div class="comment">
-            <${Avatar} url=${api.avatarUrl(c.author?.avatar_path)} name=${c.author?.username} size=${32} />
-            <div class="comment-body">
-              <div><a href=${`#/u/${c.user_id}`} onClick=${onNavigate}><strong>@${c.author?.username ?? 'someone'}</strong></a><${Badge} kind=${c.author?.badge} />
-                <small class="muted"> ${ago(c.created_at)}</small></div>
-              <p><${RichText} text=${c.body} onNavigate=${onNavigate} /></p>
-            </div>
-            ${c.user_id === myId
-              ? html`<button class="link small danger" onClick=${() => remove(c)}>Delete</button>`
-              : html`<button class="link small" onClick=${() => setReporting(c)}>Report</button>`}
-          </div>`)}
+        : threads(items).map(thread)}
     </div>
-    <form class="comment-form" onSubmit=${send}>
-      <${MentionField} className="comment-input" placeholder="Add a comment…" maxlength="500" value=${draft} onInput=${setDraft}
-        aria-label="Add a comment" />
-      <button class="btn primary" disabled=${!draft.trim() || sending}>Post</button>
-    </form>
+    <div class="comment-compose">
+      ${replyTo ? html`<div class="replying-to">
+        <span class="muted">Replying to <strong>@${replyTo.author?.username ?? 'someone'}</strong></span>
+        <button class="link small" type="button" onClick=${cancelReply} aria-label="Cancel reply">Cancel</button>
+      </div>` : null}
+      <form class="comment-form" onSubmit=${send}>
+        <${MentionField} className="comment-input" placeholder=${replyTo ? 'Add a reply…' : 'Add a comment…'} maxlength="500"
+          value=${draft} onInput=${setDraft} aria-label=${replyTo ? 'Add a reply' : 'Add a comment'} />
+        <button class="btn primary" disabled=${!draft.trim() || sending}>${replyTo ? 'Reply' : 'Post'}</button>
+      </form>
+    </div>
     ${reporting ? html`<${ReportModal} target="comment" id=${reporting.id} onClose=${() => setReporting(null)} />` : null}
   </div>`;
 }

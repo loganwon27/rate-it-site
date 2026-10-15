@@ -315,15 +315,18 @@ export async function postLikers(postId) {
   return unwrap(await db.rpc('post_likers', { p_post: postId }));
 }
 
-const COMMENT_COLUMNS = 'id, post_id, user_id, body, created_at, author:profiles(username, avatar_path, badge)';
+// by_creator: the post's creator wrote it (never on anonymous posts). parent_id: the comment it replies to.
+const COMMENT_COLUMNS = 'id, post_id, user_id, parent_id, body, created_at, by_creator, author:profiles(username, avatar_path, badge)';
 
 export async function comments(postId) {
   return unwrap(await db.from('comments').select(COMMENT_COLUMNS).eq('post_id', postId)
     .order('created_at', { ascending: true }).limit(200));
 }
 
-export async function addComment(postId, body) {
-  return unwrap(await db.from('comments').insert({ post_id: postId, body: body.trim() }).select(COMMENT_COLUMNS).single());
+/** `parentId`: reply to that comment (a reply to a reply goes under the same top-level comment). */
+export async function addComment(postId, body, parentId = null) {
+  const row = { post_id: postId, body: body.trim(), ...(parentId ? { parent_id: parentId } : {}) };
+  return unwrap(await db.from('comments').insert(row).select(COMMENT_COLUMNS).single());
 }
 
 export async function deleteComment(id) {

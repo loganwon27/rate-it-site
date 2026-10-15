@@ -173,6 +173,7 @@ export function NotificationsPage() {
     const name = n.actor ? `@${n.actor.username}` : 'Someone';
     return {
       follow: `${name} followed you`, like: `${name} liked your post`, comment: `${name} commented on your post`,
+      reply: `${name} replied to your comment`,
       rating_milestone: `Your post reached ${n.data?.count ?? ''} ratings`,
       mention: `${name} mentioned you in ${n.data?.comment_id ? 'a comment' : 'a post'}`,
     }[n.type];
