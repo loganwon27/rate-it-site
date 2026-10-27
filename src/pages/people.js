@@ -8,6 +8,7 @@ import { bumpVersion, setState, useStore } from '../lib/store.js';
 import { GridSkeleton, PostGrid, ReportModal } from '../components/post.js';
 import { BanDialog, RoleDialog, banLabel } from '../components/ban.js';
 import { Avatar, Badge, Chip, Confirm, Empty, ErrorState, Icon, Modal, Spinner, toast, useWide } from '../components/ui.js';
+import { ChallengeBanner, StreakPill } from './top.js';
 
 export function DiscoverPage() {
   const { version } = useStore();
@@ -42,6 +43,7 @@ export function DiscoverPage() {
 
   return html`<div class="page wide-page">
     <h1 class="page-title">Discover</h1>
+    ${query ? null : html`<${ChallengeBanner} />`}
     <label class="search">
       <${Icon} name="search" size=${18} />
       <input type="search" placeholder="Search outfits, cars, setups…" value=${query}
@@ -153,6 +155,7 @@ export function ProfilePage({ id }) {
         <button class="link" onClick=${() => setDialog('followers')}><strong>${compact(profile.follower_count)}</strong> ${profile.follower_count === 1 ? 'follower' : 'followers'}</button>
         <button class="link" onClick=${() => setDialog('following')}><strong>${compact(profile.following_count)}</strong> following</button>
       </div>
+      ${isMe ? html`<${StreakPill} large=${true} />` : null}
       ${isMe
         ? html`<div class="row"><button class="btn secondary" onClick=${() => setDialog('edit')}>Edit profile</button>
             <a class="btn ghost" href="#/settings">Settings</a></div>`

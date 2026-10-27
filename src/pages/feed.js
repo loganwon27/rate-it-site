@@ -7,8 +7,9 @@ import { navigate } from '../lib/router.js';
 import { useStore } from '../lib/store.js';
 import {
   AnonymityToggle, CommentsModal, CommentsPanel, PostHeader, Reactions, PostMenu, RatingBar, Results, ShareButton, usePost,
+  Versus, VersusSummary,
 } from '../components/post.js';
-import { Empty, ErrorState, Icon, Photo, postPrompt, useWide } from '../components/ui.js';
+import { Empty, ErrorState, Icon, Photo, postPrompt, showsVersusQuestion, useWide } from '../components/ui.js';
 import { RichText } from '../components/richtext.js';
 
 /** Home: one post at a time. Rate it, see the results, go next. */
@@ -157,6 +158,30 @@ function FeedCard({ initial, wide, onNext, onPrevious, onGone }) {
     </div>
   </div>`;
 
+  if (state.versus) {
+    // This or That: both photos side by side, pick one, see the split.
+    return html`<article class="feed-card versus-card">
+      <${PostHeader} post=${post}><${PostMenu} post=${post} onGone=${onGone} /></${PostHeader}>
+      ${post.caption ? html`<p class="versus-caption"><${RichText} text=${post.caption} /></p>` : null}
+      ${showsVersusQuestion(post) ? html`<div class="rate-head"><strong>${postPrompt(post)}</strong></div>` : null}
+      <${Versus} post=${post} stats=${stats} chosen=${chosen} busy=${busy} onVote=${state.vote} keyboard=${true} />
+      ${canSeeResults ? html`<div class="after-rating">
+          <${VersusSummary} stats=${stats} chosen=${chosen} />
+          <span class="spacer"></span>
+          <${Reactions} state=${state} />
+          ${commentButton(false)}
+          <button class="btn primary next" onClick=${onNext}>Next <${Icon} name="down" size=${18} /></button>
+        </div>` : html`<div class="rate-foot">
+          <span class="muted small hint">${wide ? 'Click one, or press 1 or 2' : 'Tap the one you pick'}</span>
+          <span class="spacer"></span>
+          <${Reactions} state=${state} />
+          ${commentButton(true)}
+          <button class="link muted small" onClick=${onNext}>Skip</button>
+        </div>`}
+      ${comments}
+    </article>`;
+  }
+
   if (wide) {
     // Desktop: photo on the left, everything else beside it.
     return html`<article class="feed-split">
@@ -235,6 +260,24 @@ function PostDetail({ initial, wide }) {
         <span><strong>Get more ratings</strong><small>Share your link anywhere. Friends can rate it without the app.</small></span>
         <${ShareButton} post=${post} label="Share link" className="btn primary small" />
       </div>` : null;
+  if (state.versus) {
+    return html`<div class="post-page versus-page">
+      <button class="link back" onClick=${() => history.back()}><${Icon} name="back" size=${18} /> Back</button>
+      <${PostHeader} post=${post}><${PostMenu} post=${post} onGone=${() => history.back()} /></${PostHeader}>
+      ${hidden}
+      ${post.caption ? html`<p class="detail-caption"><${RichText} text=${post.caption} /></p>` : null}
+      ${showsVersusQuestion(post) ? html`<div class="rate-head"><strong>${postPrompt(post)}</strong></div>` : null}
+      <${Versus} post=${post} stats=${stats} chosen=${chosen} busy=${busy} onVote=${state.vote} keyboard=${true} />
+      ${canSeeResults ? html`<${VersusSummary} stats=${stats} chosen=${chosen} owner=${post.is_mine} />`
+        : html`<p class="muted small">${plural(post.vote_count ?? 0, 'vote')} so far · pick one to see the split</p>`}
+      <div class="row">
+        <${Reactions} state=${state} />
+        <${ShareButton} post=${post} />
+      </div>
+      <h3 class="comments-title">Comments <span class="muted">${compact(post.comment_count)}</span></h3>
+      <${CommentsPanel} post=${post} onCountChange=${countChange} />
+    </div>`;
+  }
   const rating = canSeeResults ? html`
       ${chosen != null ? html`<p class="gave">You gave it <strong style="color:var(--accent)">${chosen}</strong></p>` : null}
       <${Results} stats=${stats} mine=${chosen} owner=${post.is_mine} />` : html`

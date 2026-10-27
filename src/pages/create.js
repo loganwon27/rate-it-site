@@ -6,19 +6,21 @@ import { html } from '../lib/html.js';
 import { loadBitmap } from '../lib/image.js';
 import { navigate } from '../lib/router.js';
 import { bumpVersion, getState, setState } from '../lib/store.js';
-import { PostHeader, RatingBar } from '../components/post.js';
-import { Chip, DEFAULT_PROMPT, Icon, postPrompt } from '../components/ui.js';
+import { PostHeader, RatingBar, Versus } from '../components/post.js';
+import { Chip, DEFAULT_PROMPT, Icon, postPrompt, showsVersusQuestion, VERSUS_PROMPT } from '../components/ui.js';
 import { MentionField, RichText } from '../components/richtext.js';
 
 const ASPECT = 4 / 5;
 
-/** Pick → crop → details → preview → post. */
+/** Pick → crop → details → preview → post. This or That posts pick and crop two photos. */
 export function CreatePage() {
+  const [mode, setMode] = useState('rate');
   const [step, setStep] = useState('pick');
   const [bitmap, setBitmap] = useState(null);
-  const [canvas, setCanvas] = useState(null);
-  const [details, setDetails] = useState({ category: '', caption: '', prompt: '', showUsername: true });
+  const [canvases, setCanvases] = useState([]);
+  const [details, setDetails] = useState(() => ({ category: '', caption: '', prompt: '', showUsername: true, ...presetDetails() }));
   const [error, setError] = useState(null);
+  const needed = mode === 'versus' ? 2 : 1;
 
   async function pick(e) {
     const file = e.target.files?.[0];
@@ -34,22 +36,39 @@ export function CreatePage() {
   }
 
   if (step === 'crop') {
-    return html`<${Cropper} bitmap=${bitmap} onBack=${() => setStep('pick')}
-      onDone=${(c) => { setCanvas(c); setStep('details'); }} />`;
+    return html`<${Cropper} bitmap=${bitmap} title=${mode === 'versus' ? `Crop photo ${canvases.length ? 'B' : 'A'}` : 'Crop'}
+      onBack=${() => setStep('pick')}
+      onDone=${(c) => {
+        const next = [...canvases, c];
+        setCanvases(next);
+        setStep(next.length < needed ? 'pick' : 'details');
+      }} />`;
   }
   if (step === 'details') {
-    return html`<${Details} canvas=${canvas} value=${details} onChange=${setDetails}
-      onBack=${() => setStep('crop')} onNext=${() => setStep('preview')} />`;
+    return html`<${Details} canvases=${canvases} versus=${mode === 'versus'} value=${details} onChange=${setDetails}
+      onBack=${() => { setCanvases(canvases.slice(0, -1)); setStep('crop'); }} onNext=${() => setStep('preview')} />`;
   }
   if (step === 'preview') {
-    return html`<${Preview} canvas=${canvas} details=${details} onBack=${() => setStep('details')} />`;
+    return html`<${Preview} canvases=${canvases} details=${details} onBack=${() => setStep('details')} />`;
   }
+  const second = mode === 'versus' && canvases.length === 1;
   return html`<div class="page narrow">
-    <h1 class="page-title">New post</h1>
-    <p class="muted">Post anything. See what people think.</p>
+    <h1 class="page-title">${second ? 'Second photo' : 'New post'}</h1>
+    ${second ? html`<div class="versus-picked">
+        <${CanvasImage} canvas=${canvases[0]} className="details-thumb" />
+        <span><strong>Photo A is ready</strong><small class="muted">Now pick photo B.</small></span>
+        <button class="link small" onClick=${() => setCanvases([])}>Start over</button>
+      </div>` : html`
+      <p class="muted">Post anything. See what people think.</p>
+      <div class="segmented" role="tablist" aria-label="Kind of post">
+        <button role="tab" aria-selected=${mode === 'rate'} class=${mode === 'rate' ? 'on' : ''} onClick=${() => setMode('rate')}>
+          <strong>Rate it</strong><small>One photo, rated 1–10</small></button>
+        <button role="tab" aria-selected=${mode === 'versus'} class=${mode === 'versus' ? 'on' : ''} onClick=${() => setMode('versus')}>
+          <strong>This or That</strong><small>Two photos, people pick one</small></button>
+      </div>`}
     <label class="source-tile">
       <span class="tile-icon"><${Icon} name="photo" size=${26} /></span>
-      <span><strong>Choose a photo</strong><small>From your device</small></span>
+      <span><strong>${mode === 'versus' ? `Choose photo ${second ? 'B' : 'A'}` : 'Choose a photo'}</strong><small>From your device</small></span>
       <input type="file" accept="image/*" onChange=${pick} hidden />
     </label>
     <label class="source-tile mobile-only">
@@ -61,8 +80,14 @@ export function CreatePage() {
   </div>`;
 }
 
+/** "Join challenge" links open Create with the challenge's #tag already in the caption (#/create?tag=…). */
+function presetDetails() {
+  const tag = new URLSearchParams(window.location.hash.split('?')[1] || '').get('tag');
+  return tag && /^[a-z0-9_]{1,30}$/i.test(tag) ? { caption: `#${tag.toLowerCase()} ` } : {};
+}
+
 /** Drag to position and zoom (slider, scroll wheel or pinch) inside a 4:5 frame. */
-function Cropper({ bitmap, onBack, onDone }) {
+function Cropper({ bitmap, title = 'Crop', onBack, onDone }) {
   const frameRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [zoom, setZoom] = useState(1);
@@ -135,7 +160,7 @@ function Cropper({ bitmap, onBack, onDone }) {
 
   const imgStyle = `width:${bitmap.width * scale}px;height:${bitmap.height * scale}px;transform:translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
   return html`<div class="page narrow">
-    <${StepHeader} title="Crop" onBack=${onBack} />
+    <${StepHeader} title=${title} onBack=${onBack} />
     <div class="crop-frame" ref=${frameRef} style=${`height:${size.h}px`}
         onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up}
         onWheel=${(e) => { e.preventDefault(); setZoomClamped(zoom * (e.deltaY < 0 ? 1.08 : 0.93)); }}>
@@ -167,14 +192,14 @@ function CanvasImage({ canvas, className }) {
   return url ? html`<img class=${className} src=${url} alt="Your photo" />` : null;
 }
 
-function Details({ canvas, value, onChange, onBack, onNext }) {
+function Details({ canvases, versus, value, onChange, onBack, onNext }) {
   const [custom, setCustom] = useState(!CATEGORIES.includes(value.category) && value.category !== '');
   const set = (patch) => onChange({ ...value, ...patch });
   const valid = value.category.trim().length > 0 && value.category.trim().length <= 24 && value.caption.length <= 200
     && value.prompt.length <= 60;
   return html`<div class="page narrow">
     <${StepHeader} title="Details" onBack=${onBack} />
-    <${CanvasImage} canvas=${canvas} className="details-thumb" />
+    <div class="details-thumbs">${canvases.map((c) => html`<${CanvasImage} canvas=${c} className="details-thumb" />`)}</div>
     <h3>Category</h3>
     <div class="chips wrap">
       ${CATEGORIES.map((c) => html`<${Chip} label=${c} selected=${!custom && value.category === c}
@@ -188,9 +213,9 @@ function Details({ canvas, value, onChange, onBack, onNext }) {
       onInput=${(caption) => set({ caption })} aria-label="Caption" />
     <p class="muted small">Add #hashtags so people can find it, and @mention friends to let them know.</p>
     <h3>Question</h3>
-    <input class="field" maxlength="60" placeholder=${DEFAULT_PROMPT} value=${value.prompt}
-      onInput=${(e) => set({ prompt: e.target.value })} aria-label="Question above the rating bar" />
-    <p class="muted small">What people see above the 1–10 bar. Leave it empty for "${DEFAULT_PROMPT}"</p>
+    <input class="field" maxlength="60" placeholder=${versus ? VERSUS_PROMPT : DEFAULT_PROMPT} value=${value.prompt}
+      onInput=${(e) => set({ prompt: e.target.value })} aria-label=${versus ? 'Question above the two photos' : 'Question above the rating bar'} />
+    <p class="muted small">${versus ? 'What people see above the two photos.' : 'What people see above the 1–10 bar.'} Leave it empty for "${versus ? VERSUS_PROMPT : DEFAULT_PROMPT}"</p>
     <label class="switch-row">
       <span><strong>Show my username</strong><br /><small class="muted">${value.showUsername
         ? 'People will see this is yours.' : "Posted anonymously — it won't appear on your profile to others."}</small></span>
@@ -201,7 +226,7 @@ function Details({ canvas, value, onChange, onBack, onNext }) {
 }
 
 /** Shows the post exactly as it will appear in the feed, then uploads it. */
-function Preview({ canvas, details, onBack }) {
+function Preview({ canvases, details, onBack }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const me = getState().profile;
@@ -209,13 +234,16 @@ function Preview({ canvas, details, onBack }) {
     id: 'preview', author_id: details.showUsername ? me?.id : null, author_username: details.showUsername ? me?.username : null,
     author_avatar_path: details.showUsername ? me?.avatar_path : null, category: details.category.trim(),
     caption: details.caption.trim(), prompt: details.prompt.trim(), created_at: new Date().toISOString(), like_count: 0, comment_count: 0,
+    kind: canvases.length > 1 ? 'versus' : 'rate',
   };
+  const [urls, setUrls] = useState([]);
+  useEffect(() => { setUrls(canvases.map((c) => c.toDataURL('image/jpeg', 0.85))); }, [canvases]);
 
   async function post() {
     setBusy(true);
     setError(null);
     try {
-      await api.createPost({ canvas, ...details });
+      await api.createPost({ canvas: canvases[0], canvas2: canvases[1] ?? null, ...details });
       bumpVersion();
       setState({ profile: await api.myProfile() });
       navigate(`/u/${me.id}`);
@@ -227,10 +255,16 @@ function Preview({ canvas, details, onBack }) {
 
   return html`<div class="page narrow">
     <${StepHeader} title="Preview" onBack=${onBack} />
-    <article class="feed-card preview" aria-label="Preview">
+    ${fake.kind === 'versus' ? html`<article class="feed-card versus-card preview" aria-label="Preview">
+      <${PostHeader} post=${fake} />
+      ${fake.caption ? html`<p class="versus-caption"><${RichText} text=${fake.caption} /></p>` : null}
+      ${showsVersusQuestion(fake) ? html`<div class="rate-head"><strong>${postPrompt(fake)}</strong></div>` : null}
+      ${urls.length === 2 ? html`<${Versus} post=${{ ...fake, preview1: urls[0], preview2: urls[1] }} stats=${null} chosen=${null}
+        busy=${true} onVote=${() => {}} />` : null}
+    </article>` : html`<article class="feed-card preview" aria-label="Preview">
       <${PostHeader} post=${fake} />
       <div class="feed-photo">
-        <${CanvasImage} canvas=${canvas} className="photo-img" />
+        <${CanvasImage} canvas=${canvases[0]} className="photo-img" />
         <div class="photo-shade"></div>
         ${fake.caption ? html`<p class="caption"><${RichText} text=${fake.caption} /></p>` : null}
       </div>
@@ -238,7 +272,7 @@ function Preview({ canvas, details, onBack }) {
         <div class="rate-head"><strong>${postPrompt(fake)}</strong></div>
         <${RatingBar} locked=${null} busy=${true} onRate=${() => {}} />
       </div>
-    </article>
+    </article>`}
     ${error ? html`<p class="error">${error}</p>` : null}
     <button class="btn primary block" disabled=${busy} onClick=${post}>${busy ? 'Posting…' : error ? 'Try again' : 'Post'}</button>
   </div>`;

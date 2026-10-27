@@ -5,8 +5,8 @@ import { ratingColor } from '../lib/format.js';
 import { html } from '../lib/html.js';
 import { navigate } from '../lib/router.js';
 import { setState, useStore } from '../lib/store.js';
-import { RatingBar } from '../components/post.js';
-import { Avatar, Badge, Empty, Photo, Spinner, postPrompt, toast } from '../components/ui.js';
+import { RatingBar, Versus } from '../components/post.js';
+import { Avatar, Badge, Empty, Photo, Spinner, postPrompt, showsVersusQuestion, toast } from '../components/ui.js';
 
 const PENDING_KEY = 'pendingShareRating';
 const PENDING_MAX_AGE = 7 * 24 * 3600 * 1000;
@@ -35,11 +35,16 @@ export async function submitPendingShareRating(anonymously) {
   if (!pending) return;
   clearPending();
   try {
-    await api.rate(pending.postId, pending.score, anonymously);
-    toast(`Your ${pending.score} is in`);
+    if (pending.choice) {
+      await api.vote(pending.postId, pending.choice);
+      toast('Your pick is in');
+    } else {
+      await api.rate(pending.postId, pending.score, anonymously);
+      toast(`Your ${pending.score} is in`);
+    }
   } catch (e) {
     // Already rated it (or it's your own post): just open it.
-    if (!/already_rated|own_post/i.test(`${e.message}`)) toast(describeError(e));
+    if (!/already_rated|already_voted|own_post/i.test(`${e.message}`)) toast(describeError(e));
   }
   navigate(`/p/${pending.postId}`);
 }
@@ -52,9 +57,10 @@ export function SharePage({ code }) {
   const store = useStore();
   const [post, setPost] = useState(undefined);
   const [error, setError] = useState(null);
+  // A score (1–10), or for This or That posts the photo picked (1 or 2).
   const [picked, setPicked] = useState(() => {
     const pending = pendingShareRating();
-    return pending?.code === code ? pending.score : null;
+    return pending?.code === code ? (pending.choice ?? pending.score) : null;
   });
 
   useEffect(() => {
@@ -67,15 +73,16 @@ export function SharePage({ code }) {
     }).catch((e) => setError(describeError(e)));
   }, [code, store.phase]);
 
-  function pick(score) {
-    setPicked(score);
-    savePending({ code, postId: post.id, score });
+  const versus = post?.kind === 'versus';
+  function pick(value) {
+    setPicked(value);
+    savePending(versus ? { code, postId: post.id, choice: value } : { code, postId: post.id, score: value });
   }
 
   function join(mode) {
     setState({
       authMode: mode,
-      notice: `Your ${picked} is saved. ${mode === 'signUp' ? 'Create a free account' : 'Log in'} to lock it in and see how everyone else rated it.`,
+      notice: `${versus ? 'Your pick' : `Your ${picked}`} is saved. ${mode === 'signUp' ? 'Create a free account' : 'Log in'} to lock it in and see how everyone else rated it.`,
     });
     navigate('/');
   }
@@ -97,9 +104,21 @@ export function SharePage({ code }) {
         ${post.author_username
           ? html`<${Avatar} url=${api.avatarUrl(post.author_avatar_path)} name=${post.author_username} size=${36} />`
           : html`<span class="avatar avatar-fallback" style="width:36px;height:36px">?</span>`}
-        <span><strong>${who}<${Badge} kind=${post.author_badge} /></strong><small>wants your rating</small></span>
-        <span class="chip">${post.category}</span>
+        <span><strong>${who}<${Badge} kind=${post.author_badge} /></strong><small>${versus ? 'wants you to pick one' : 'wants your rating'}</small></span>
+        <span class="chip">${versus ? 'This or That' : post.category}</span>
       </header>
+      ${versus ? html`
+        ${post.caption ? html`<p class="share-caption">${post.caption}</p>` : null}
+        <div class="rate-head"><strong>${showsVersusQuestion(post) ? postPrompt(post) : ''}</strong>
+          <span class="muted small">${post.vote_count ?? 0} ${post.vote_count === 1 ? 'vote' : 'votes'} so far</span></div>
+        <${Versus} post=${{ ...post, is_mine: false }} stats=${null} chosen=${picked} busy=${false} onVote=${pick} keyboard=${true} />
+        ${picked == null ? html`<p class="muted small">Tap the one you pick.</p>` : html`<div class="share-join">
+          <p class="gave">You picked <strong style="color:var(--accent)">${picked === 1 ? 'A' : 'B'}</strong></p>
+          <p>Create a free account to lock it in and see what everyone else picked.</p>
+          <button class="btn primary block" onClick=${() => join('signUp')}>Create free account</button>
+          <button class="btn ghost block" onClick=${() => join('logIn')}>I already have an account</button>
+          <button class="link muted small" onClick=${() => { clearPending(); setPicked(null); }}>Change my pick</button>
+        </div>`}` : html`
       <div class="share-photo" style=${`aspect-ratio:${post.image_width} / ${post.image_height}`}>
         <${Photo} eager=${true} url=${api.postImage(post)} alt=${post.caption || `${post.category} post`} />
       </div>
@@ -116,7 +135,7 @@ export function SharePage({ code }) {
           <button class="btn primary block" onClick=${() => join('signUp')}>Create free account</button>
           <button class="btn ghost block" onClick=${() => join('logIn')}>I already have an account</button>
           <button class="link muted small" onClick=${() => { clearPending(); setPicked(null); }}>Change my rating</button>
-        </div>`}
+        </div>`}`}
     </article>
     <p class="muted small center">Rate It: post anything, see what people think.</p>
   </div>`;

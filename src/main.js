@@ -14,6 +14,7 @@ import { CreatePage } from './pages/create.js';
 import { BannedPage, ModerationPage, NotificationsPage, SettingsPage } from './pages/account.js';
 import { HashtagPage, UsernamePage } from './pages/hashtag.js';
 import { InsightsPage } from './pages/insights.js';
+import { ChallengePage, StreakPill, TopPage } from './pages/top.js';
 import { SharePage, submitPendingShareRating } from './pages/share.js';
 import { banDeletesAt, banLabel, shortDate } from './components/ban.js';
 import { refreshPush } from './lib/push.js';
@@ -113,6 +114,8 @@ function page(route) {
     case '': return html`<${FeedPage} />`;
     case 'discover': return html`<${DiscoverPage} />`;
     case 'create': return html`<${CreatePage} />`;
+    case 'top': return html`<${TopPage} />`;
+    case 'challenge': return html`<${ChallengePage} id=${id} key=${id} />`;
     case 'me': return html`<${ProfilePage} />`;
     case 'u': return html`<${ProfilePage} id=${id} key=${id} />`;
     case 'p': return html`<${PostPage} id=${id} key=${id} />`;
@@ -143,10 +146,11 @@ function Shell({ route }) {
   const active = (name) => {
     if (name === 'me') return route.name === 'me' || (route.name === 'u' && route.params[0] === myId);
     if (name === 'discover') return route.name === 'discover' || route.name === 'tag';
+    if (name === 'top') return route.name === 'top' || route.name === 'challenge';
     return route.name === name;
   };
   const tabs = [
-    ['', 'Home', 'flame'], ['discover', 'Discover', 'grid'], ['create', 'Create', 'plus'], ['me', 'Profile', 'user'],
+    ['', 'Home', 'flame'], ['discover', 'Discover', 'grid'], ['create', 'Create', 'plus'], ['top', 'Top', 'trophy'], ['me', 'Profile', 'user'],
   ];
   const badge = store.unread > 0 ? html`<span class="badge">${store.unread > 99 ? '99+' : store.unread}</span>` : null;
   const side = (href, name, label, icon, extra = null) => html`<a href=${href} class=${active(name) ? 'on' : ''}
@@ -157,6 +161,7 @@ function Shell({ route }) {
       <nav>
         ${side('#/', '', 'Home', 'flame')}
         ${side('#/discover', 'discover', 'Discover', 'grid')}
+        ${side('#/top', 'top', 'Top', 'trophy')}
         ${side('#/create', 'create', 'New Post', 'plus')}
         <p class="nav-section">You</p>
         ${side('#/me', 'me', 'Profile', 'user')}
@@ -165,6 +170,7 @@ function Shell({ route }) {
         ${store.isAdmin ? side('#/moderation', 'moderation', 'Moderation', 'shield2') : null}
         ${store.isAdmin ? side('#/insights', 'insights', 'Insights', 'chart') : null}
       </nav>
+      <a class="sidebar-streak" href="#/top" aria-label="Your streak"><${StreakPill} /></a>
       <a class="account-card" href="#/me">
         <${Avatar} url=${api.avatarUrl(store.profile?.avatar_path)} name=${store.profile?.username} size=${34} />
         <span><strong>@${store.profile?.username}</strong><small>View profile</small></span>
@@ -172,7 +178,10 @@ function Shell({ route }) {
     </aside>
     <header class="topbar">
       <a class="brand" href="#/"><img src="icon.png" alt="" /><span>RATE IT</span></a>
-      <a class="icon-btn" href="#/notifications" aria-label="Notifications"><${Icon} name="bell" />${badge}</a>
+      <span class="topbar-end">
+        <a href="#/top" aria-label="Your streak"><${StreakPill} /></a>
+        <a class="icon-btn" href="#/notifications" aria-label="Notifications"><${Icon} name="bell" />${badge}</a>
+      </span>
     </header>
     <main class="content">
       ${banLabel(store.profile) ? html`<p class="ban-notice" role="status">${banDeletesAt(store.profile)

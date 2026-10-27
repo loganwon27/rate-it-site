@@ -174,6 +174,7 @@ export function NotificationsPage() {
     return {
       follow: `${name} followed you`, like: `${name} liked your post`, comment: `${name} commented on your post`,
       reply: `${name} replied to your comment`,
+      challenge_win: `🏆 Your post won the #${n.data?.tag ?? ''} challenge!`,
       rating_milestone: `Your post reached ${n.data?.count ?? ''} ratings`,
       mention: `${name} mentioned you in ${n.data?.comment_id ? 'a comment' : 'a post'}`,
     }[n.type];

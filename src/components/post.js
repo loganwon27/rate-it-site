@@ -12,21 +12,48 @@ import { MentionField, RichText } from './richtext.js';
 export function usePost(initial) {
   const [post, setPost] = useState(initial);
   const [stats, setStats] = useState(null);
-  const [chosen, setChosen] = useState(initial.my_score ?? null);
+  const versus = initial.kind === 'versus';
+  // Your score (1–10), or for This or That posts your pick (1 or 2).
+  const [chosen, setChosen] = useState((versus ? initial.my_vote : initial.my_score) ?? null);
   const [busy, setBusy] = useState(false);
-  const canSeeResults = post.my_score != null || post.is_mine;
+  const canSeeResults = post.my_score != null || post.my_vote != null || post.is_mine;
 
   useEffect(() => {
     setPost(initial);
-    setChosen(initial.my_score ?? null);
+    setChosen((initial.kind === 'versus' ? initial.my_vote : initial.my_score) ?? null);
     setStats(null);
   }, [initial.id]);
 
   useEffect(() => {
     if (canSeeResults && !stats) {
-      api.ratingStats(post.id).then(setStats).catch(() => {});
+      (versus ? api.versusStats(post.id) : api.ratingStats(post.id)).then(setStats).catch(() => {});
     }
   }, [post.id, canSeeResults]);
+
+  async function vote(choice) {
+    if (post.my_vote != null || post.is_mine || busy) return;
+    setBusy(true);
+    setChosen(choice);
+    try {
+      const result = await api.vote(post.id, choice);
+      setStats(result);
+      setPost({ ...post, my_vote: choice, vote_count: result.count });
+      refreshStreak();
+    } catch (error) {
+      const message = describeError(error);
+      const result = message === 'You already picked one.' ? await api.versusStats(post.id).catch(() => null) : null;
+      if (result) {
+        setStats(result);
+        setChosen(result.my_choice);
+        setPost({ ...post, my_vote: result.my_choice });
+      } else {
+        setChosen(null);
+      }
+      toast(message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function rate(score) {
     if (post.my_score != null || post.is_mine || busy) return;
@@ -36,6 +63,7 @@ export function usePost(initial) {
       const result = await api.rate(post.id, score, getState().settings?.rate_anonymously ?? true);
       setStats(result);
       setPost({ ...post, my_score: score, rating_count: result.count });
+      refreshStreak();
     } catch (error) {
       const message = describeError(error);
       if (message === 'You already rated this.') {
@@ -84,7 +112,68 @@ export function usePost(initial) {
     }
   }
 
-  return { post, setPost, stats, chosen, busy, canSeeResults, rate, toggleLike, toggleDislike };
+  return { post, setPost, stats, chosen, busy, canSeeResults, versus, rate, vote, toggleLike, toggleDislike };
+}
+
+/** Reloads your streak after you rate or vote. Celebrates when that hits the daily goal or starts a new day. */
+export async function refreshStreak() {
+  const before = getState().streak;
+  try {
+    const streak = await api.streak();
+    setState({ streak });
+    if (!before) return;
+    if (before.today < streak.goal && streak.today >= streak.goal) toast(`Daily goal done 🔥 ${plural(streak.current, 'day')} in a row`);
+    else if (before.today === 0 && streak.today > 0 && streak.current > 1) toast(`🔥 ${streak.current}-day streak`);
+  } catch {}
+}
+
+/**
+ * This or That: two photos side by side. Click one (or press 1 / 2). After you pick, or on your own post,
+ * each side shows its share of the votes.
+ */
+export function Versus({ post, stats, chosen, busy, onVote, keyboard = false }) {
+  const open = chosen == null && !post.is_mine && !busy && post.id !== 'preview';
+  useEffect(() => {
+    if (!keyboard || !open) return undefined;
+    const onKey = (e) => {
+      if (e.target.closest('input, textarea') || e.metaKey || e.ctrlKey || document.body.classList.contains('modal-open')) return;
+      if (e.key === '1' || e.key === '2') onVote(Number(e.key));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [keyboard, open, onVote]);
+
+  const split = stats && (chosen != null || post.is_mine);
+  const total = stats?.count || 0;
+  const share = (n) => (total ? Math.round((100 * n) / total) : 0);
+  const sides = [
+    { choice: 1, url: post.preview1 || api.postImage(post), votes: stats?.a ?? 0, label: 'A' },
+    { choice: 2, url: post.preview2 || api.postImage2(post), votes: stats?.b ?? 0, label: 'B' },
+  ];
+  const leader = split && stats.a !== stats.b ? (stats.a > stats.b ? 1 : 2) : null;
+  return html`<div class=${`versus ${split ? 'split' : ''}`} role="group" aria-label="This or That">
+    ${sides.map((side) => html`<button class=${`versus-side ${chosen === side.choice ? 'picked' : ''} ${leader === side.choice ? 'leader' : ''}`}
+        key=${side.choice} disabled=${!open} onClick=${() => onVote(side.choice)}
+        aria-label=${split ? `Photo ${side.label}: ${share(side.votes)}%${chosen === side.choice ? ', your pick' : ''}` : `Pick photo ${side.label}`}>
+      <${Photo} eager=${true} url=${side.url} alt=${`Photo ${side.label}`} />
+      <span class="versus-label">${side.label}</span>
+      ${split ? html`<span class="versus-result">
+        <strong>${share(side.votes)}%</strong>
+        <small>${chosen === side.choice ? 'Your pick' : plural(side.votes, 'vote')}</small>
+      </span>` : null}
+    </button>`)}
+    <span class="versus-or" aria-hidden="true">OR</span>
+  </div>`;
+}
+
+/** The line under a This or That post once you can see the split. */
+export function VersusSummary({ stats, chosen, owner = false }) {
+  if (!stats) return html`<p class="muted small">Loading…</p>`;
+  if (!stats.count) return html`<p class="muted small">No votes yet.</p>`;
+  const mine = chosen === 1 ? stats.a : chosen === 2 ? stats.b : null;
+  const agree = mine != null && stats.count > 1 ? Math.round((100 * (mine - 1)) / (stats.count - 1)) : null;
+  return html`<p class="versus-summary"><strong>${plural(stats.count, 'vote')}</strong>
+    ${owner ? '' : agree == null ? " · You're the first to pick." : ` · ${agree}% picked the same as you.`}</p>`;
 }
 
 /** Ten cells. Click a number, or press and slide across them and let go. Keys 1–9 and 0 (=10) work too. */
@@ -187,7 +276,9 @@ export function PostHeader({ post, children }) {
         <span class="avatar avatar-fallback" style="width:34px;height:34px"><${Icon} name="eyeOff" size=${16} /></span>
         <span><strong>Anonymous</strong><small>${ago(post.created_at)}</small></span>
       </span>`;
-  return html`<div class="post-head">${author}<span class="pill">${post.category}</span>${children}</div>`;
+  return html`<div class="post-head">${author}
+    ${post.won_challenge ? html`<a class="pill winner" href=${`#/tag/${post.won_challenge}`} title="Won this challenge">🏆 #${post.won_challenge}</a>` : null}
+    <span class="pill">${post.kind === 'versus' ? 'This or That' : post.category}</span>${children}</div>`;
 }
 
 export function LikeButton({ post, onToggle }) {
@@ -516,8 +607,11 @@ export function ShareButton({ post, label = 'Share', className = 'action' }) {
 export function PostGrid({ posts }) {
   return html`<div class="grid">
     ${posts.map((p) => html`<a class="grid-cell" key=${p.id} href=${`#/p/${p.id}`} aria-label=${`${p.category} post${p.caption ? `: ${p.caption}` : ''}`}>
-      <${Photo} url=${api.postThumb(p)} />
-      ${p.rating_count > 0 ? html`<span class="grid-badge"><${Icon} name="star" size=${12} /> ${compact(p.rating_count)}</span>` : null}
+      ${p.kind === 'versus' ? html`<span class="grid-versus"><${Photo} url=${api.postThumb(p)} /><${Photo} url=${api.postThumb2(p)} /></span>`
+        : html`<${Photo} url=${api.postThumb(p)} />`}
+      ${p.kind === 'versus' ? html`<span class="grid-badge">VS ${p.vote_count ? compact(p.vote_count) : ''}</span>`
+        : p.rating_count > 0 ? html`<span class="grid-badge"><${Icon} name="star" size=${12} /> ${compact(p.rating_count)}</span>` : null}
+      ${p.won_challenge ? html`<span class="grid-winner" title=${`Won #${p.won_challenge}`}>🏆</span>` : null}
     </a>`)}
   </div>`;
 }

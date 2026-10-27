@@ -8,6 +8,8 @@ export function Icon({ name, size = 22 }) {
     flame: 'M12 3c1 3 4 4.5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-8z',
     grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
     plus: 'M12 5v14M5 12h14',
+    right: 'M9 5l7 7-7 7',
+    trophy: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4v3h-4z',
     user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9a7 7 0 0 1 14 0',
     bell: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0',
     gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14.5 3h-5l-.4 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2l.4 2.6h5l.4-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z',
@@ -101,7 +103,10 @@ const BADGES = { founder: 'Founder', admin: 'Admin', friend: 'Founders-Friend' }
 
 /** The question above a post's rating bar: the poster's own, or the default. */
 export const DEFAULT_PROMPT = 'What do you think?';
-export const postPrompt = (post) => post?.prompt?.trim() || DEFAULT_PROMPT;
+export const VERSUS_PROMPT = 'Which one?';
+/** This or That posts only show a question when the poster wrote one, or there's no caption to ask it. */
+export const showsVersusQuestion = (post) => Boolean(post?.prompt?.trim() || !post?.caption?.trim());
+export const postPrompt = (post) => post?.prompt?.trim() || (post?.kind === 'versus' ? VERSUS_PROMPT : DEFAULT_PROMPT);
 
 /** The small public tag next to a team member's username. Renders nothing for everyone else. */
 export function Badge({ kind }) {

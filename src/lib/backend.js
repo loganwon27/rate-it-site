@@ -30,6 +30,11 @@ const FALLBACK = 'Something went wrong. Try again.';
 
 const KNOWN = [
   ['already_rated', 'You already rated this.'],
+  ['already_voted', 'You already picked one.'],
+  ['vote_first', 'Pick one to see the results.'],
+  ['admin_only', 'Only admins can do that.'],
+  ['challenges_check', 'The challenge has to end after it starts.'],
+  ['challenges_tag_check', 'Tags are letters, numbers and _ (at least one letter).'],
   ['rate_limited', "You're doing that too fast. Try again in a bit."],
   ['own_post', "You can't rate your own post."],
   ['post_not_found', "This post isn't available anymore."],

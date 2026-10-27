@@ -2,7 +2,8 @@ import { useEffect, useState } from 'preact/hooks';
 
 // Hash routes: #/, #/discover, #/p/<id>, #/u/<id>, ...
 function parse() {
-  const path = window.location.hash.replace(/^#/, '') || '/';
+  // Anything after "?" is options for the page (e.g. #/create?tag=deskweek), not part of the route.
+  const path = window.location.hash.replace(/^#/, '').split('?')[0] || '/';
   const [name = '', ...params] = path.split('/').filter(Boolean);
   return { path, name, params };
 }

@@ -764,3 +764,105 @@ h1 .role-tag { font-size: 12px; padding: 2px 9px; vertical-align: 5px; margin-le
 .hashtag-head p { margin: 2px 0 0; }
 .hashtag-icon { display: grid; place-items: center; flex: none; width: 72px; height: 72px; border-radius: 50%;
   background: var(--surface); border: 1px solid var(--line); font-size: 34px; font-weight: 800; color: var(--accent); }
+
+/* ---------- This or That ---------- */
+.versus { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.versus-side { position: relative; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden; background: var(--surface);
+  outline: 0 solid var(--accent); transition: transform .15s, outline-width .15s, opacity .2s; }
+.versus-side:not(:disabled):hover { transform: translateY(-2px); }
+.versus-side:not(:disabled):active { transform: scale(0.98); }
+.versus-side .photo { position: absolute; inset: 0; }
+.versus-side:focus-visible { outline-width: 3px; }
+.versus-label { position: absolute; top: 10px; left: 10px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(0, 0, 0, .55); color: #fff; font-weight: 800; font-size: 14px; }
+.versus-or { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--bg); color: var(--text); font-weight: 900; font-size: 12px; letter-spacing: .06em;
+  box-shadow: 0 0 0 4px var(--bg); pointer-events: none; }
+.versus.split .versus-or { opacity: 0; }
+.versus-result { position: absolute; inset: auto 0 0; padding: 40px 12px 12px; display: grid; justify-items: start;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .75)); color: #fff; animation: versus-in .35s ease; }
+.versus-result strong { font-size: 34px; font-weight: 900; line-height: 1; }
+.versus-result small { opacity: .85; }
+.versus.split .versus-side:not(.leader) { opacity: .78; }
+.versus-side.picked { outline-width: 3px; }
+.versus-side.leader .versus-result strong { color: var(--accent); }
+@keyframes versus-in { from { opacity: 0; transform: translateY(12px); } }
+.versus-card { height: auto; min-height: 0; }
+.versus-card .rate-foot { gap: 14px; }
+.versus-caption { font-size: 17px; font-weight: 700; }
+.versus-summary { color: var(--muted); }
+.versus-summary strong { color: var(--text); }
+.feed-wide .versus-card { max-width: 760px; margin: 0 auto; width: 100%; }
+.feed-wide:has(.versus-card) { height: auto; }
+.versus-page { display: grid; gap: 12px; }
+.segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 16px; }
+.segmented button { display: grid; gap: 2px; text-align: left; padding: 14px; border-radius: 14px; background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line) inset; }
+.segmented button small { color: var(--muted); }
+.segmented button.on { box-shadow: 0 0 0 2px var(--accent) inset; }
+.details-thumbs { display: flex; gap: 8px; }
+.versus-picked { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.versus-picked .details-thumb { height: 90px; }
+.versus-picked span { display: grid; flex: 1; }
+.grid-versus { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.grid-versus .photo { position: relative; inset: auto; }
+.grid-winner { position: absolute; top: 6px; right: 6px; font-size: 16px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)); }
+.pill.winner { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); font-weight: 700; }
+
+/* ---------- Streaks ---------- */
+.streak { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--surface);
+  font-size: 13px; color: var(--text); white-space: nowrap; }
+.streak .flame { filter: grayscale(1); opacity: .55; transition: filter .3s, opacity .3s; }
+.streak .flame.lit { filter: none; opacity: 1; }
+.streak-track { width: 34px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.streak-track span { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s ease; }
+.streak.done .streak-track span { background: linear-gradient(90deg, #ffb347, var(--accent)); }
+.streak small { color: var(--muted); }
+.streak.large { padding: 8px 14px; font-size: 15px; gap: 8px; margin: 4px 0 8px; }
+.streak.large .streak-track { width: 60px; }
+.topbar-end { display: flex; align-items: center; gap: 6px; }
+.topbar-end .streak .streak-track, .topbar-end .streak small { display: none; }
+.sidebar-streak { display: block; margin: auto 0 10px; }
+.page-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* ---------- Challenges & leaderboards ---------- */
+.challenge-banner { display: flex; align-items: center; gap: 14px; padding: 14px 16px; margin-bottom: 16px; border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), var(--surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent) inset; color: var(--text); }
+.challenge-banner > span:nth-child(2) { display: grid; flex: 1; min-width: 0; }
+.challenge-banner small:first-child { color: var(--accent); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+.challenge-banner strong { font-size: 17px; }
+.challenge-icon { font-size: 28px; line-height: 1; }
+.challenge-icon.big { font-size: 52px; }
+.challenges { display: grid; gap: 14px; }
+.challenges > .btn { justify-self: start; }
+.challenges h3 { margin: 8px 0; }
+.challenge-card { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 14px; background: var(--surface);
+  color: var(--text); margin-bottom: 8px; }
+.challenge-card.active { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent) inset; }
+.challenge-card:hover { background: var(--hover); }
+.challenge-text { display: grid; flex: 1; min-width: 0; }
+.challenge-text small { color: var(--muted); }
+.challenge-text .gold, .gold { color: var(--accent); }
+.challenge-thumb { position: relative; width: 52px; aspect-ratio: 4 / 5; border-radius: 8px; overflow: hidden; flex: none; }
+.challenge-thumb .photo { position: absolute; inset: 0; }
+.challenge-hero { display: grid; justify-items: center; text-align: center; gap: 8px; padding: 16px 0 8px; }
+.challenge-hero h1 { margin: 0; font-size: 28px; }
+.challenge-hero p { color: var(--muted); max-width: 46ch; }
+.ranked { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.rank-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; color: var(--text); }
+.rank-row:hover { background: var(--hover); }
+.rank-row.top1 { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.rank { width: 30px; text-align: center; font-weight: 800; color: var(--muted); font-size: 16px; flex: none; }
+.rank-row.top1 .rank, .rank-row.top2 .rank, .rank-row.top3 .rank { font-size: 26px; line-height: 1; }
+.rank-thumb { position: relative; width: 48px; aspect-ratio: 4 / 5; border-radius: 8px; overflow: hidden; flex: none; }
+.rank-thumb .photo { position: absolute; inset: 0; }
+.rank-text { display: grid; flex: 1; min-width: 0; }
+.rank-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-text small { color: var(--muted); }
+.rank-score strong { font-size: 20px; font-weight: 800; color: var(--accent); }
+.leaderboard { display: grid; gap: 10px; }
+.form { display: grid; gap: 12px; }
+.form label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tabbar a span { font-size: 10px; }

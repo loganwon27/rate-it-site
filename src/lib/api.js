@@ -203,6 +203,15 @@ export function postThumb(post) {
   return publicUrl('posts', post.thumb_path);
 }
 
+export function postThumb2(post) {
+  return publicUrl('posts', post.thumb2_path);
+}
+
+/** The second photo of a This or That post. */
+export function postImage2(post) {
+  return publicUrl('posts', post.image2_path);
+}
+
 export async function feed(exclude = []) {
   return unwrap(await db.rpc('get_feed', { p_limit: 8, p_exclude: exclude }));
 }
@@ -225,24 +234,34 @@ export async function post(id) {
 }
 
 /** Uploads a full-size image and a grid thumbnail, then creates the post. `image` is a 4:5 cropped canvas. */
-export async function createPost({ canvas, category, caption, prompt = '', showUsername }) {
+/** `canvas2`: a second photo makes it a This or That post (people pick one instead of rating). */
+export async function createPost({ canvas, canvas2 = null, category, caption, prompt = '', showUsername }) {
   const id = await myId();
   const postId = crypto.randomUUID();
-  const full = await canvasToJpeg(canvas, 1440, 0.82);
-  const thumb = await canvasToJpeg(canvas, 480, 0.75);
-  const fullPath = `${id}/${postId}-full.jpg`;
-  const thumbPath = `${id}/${postId}-thumb.jpg`;
   const bucket = db.storage.from('posts');
-  unwrap(await bucket.upload(fullPath, full.blob, { contentType: 'image/jpeg', cacheControl: '31536000' }));
-  try {
+  const uploaded = [];
+  const upload = async (source, suffix) => {
+    const full = await canvasToJpeg(source, 1440, 0.82);
+    const thumb = await canvasToJpeg(source, 480, 0.75);
+    const fullPath = `${id}/${postId}-full${suffix}.jpg`;
+    const thumbPath = `${id}/${postId}-thumb${suffix}.jpg`;
+    unwrap(await bucket.upload(fullPath, full.blob, { contentType: 'image/jpeg', cacheControl: '31536000' }));
+    uploaded.push(fullPath);
     unwrap(await bucket.upload(thumbPath, thumb.blob, { contentType: 'image/jpeg', cacheControl: '31536000' }));
+    uploaded.push(thumbPath);
+    return { fullPath, thumbPath, width: full.width, height: full.height };
+  };
+  try {
+    const a = await upload(canvas, '');
+    const b = canvas2 ? await upload(canvas2, '2') : null;
     unwrap(await db.from('posts').insert({
-      id: postId, image_path: fullPath, thumb_path: thumbPath,
-      image_width: full.width, image_height: full.height,
+      id: postId, image_path: a.fullPath, thumb_path: a.thumbPath,
+      image_width: a.width, image_height: a.height,
       category: category.trim(), caption: caption.trim(), prompt: prompt.trim(), show_username: showUsername,
+      ...(b ? { kind: 'versus', image2_path: b.fullPath, thumb2_path: b.thumbPath, image2_width: b.width, image2_height: b.height } : {}),
     }));
   } catch (error) {
-    await bucket.remove([fullPath, thumbPath]);
+    if (uploaded.length) await bucket.remove(uploaded);
     throw error;
   }
   return post(postId);
@@ -262,7 +281,7 @@ async function canvasToJpeg(canvas, maxWidth, quality) {
 
 export async function deletePost(p) {
   unwrap(await db.from('posts').delete().eq('id', p.id));
-  await db.storage.from('posts').remove([p.image_path, p.thumb_path]);
+  await db.storage.from('posts').remove([p.image_path, p.thumb_path, p.image2_path, p.thumb2_path].filter(Boolean));
 }
 
 // ---------- Ratings ----------
@@ -279,6 +298,47 @@ export async function sharedPost(code) {
 /** The link people share: opens the photo for anyone, signed in or not. */
 export function shareUrl(post) {
   return post.share_code ? `https://userateit.com/r/?p=${post.share_code}` : `https://userateit.com/#/p/${post.id}`;
+}
+
+// ---------- This or That ----------
+/** choice: 1 (first photo) or 2. Returns the split: { a, b, count, my_choice }. */
+export async function vote(postId, choice) {
+  return unwrap(await db.rpc('vote_post', { p_post: postId, p_choice: choice }));
+}
+
+export async function versusStats(postId) {
+  return unwrap(await db.rpc('versus_stats', { p_post: postId }));
+}
+
+// ---------- Leaderboards, challenges, streaks ----------
+/** Rows: { rank, average (only if you rated it or it's yours), post }. period: 'week' | 'month' | 'all'. */
+export async function leaderboard(period = 'week', category = null) {
+  return unwrap(await db.rpc('leaderboard', { p_period: period, p_category: category, p_limit: 50 }));
+}
+
+/** Running and upcoming challenges first, then recently finished ones with their winner. */
+export async function challenges() {
+  return unwrap(await db.rpc('list_challenges'));
+}
+
+export async function challengeLeaderboard(id) {
+  return unwrap(await db.rpc('challenge_leaderboard', { p_challenge: id, p_limit: 50 }));
+}
+
+export async function createChallenge({ tag, title, description, startsAt, endsAt }) {
+  return unwrap(await db.rpc('create_challenge', {
+    p_tag: tag, p_title: title, p_description: description, p_starts_at: startsAt, p_ends_at: endsAt,
+  }));
+}
+
+export async function deleteChallenge(id) {
+  unwrap(await db.rpc('delete_challenge', { p_challenge: id }));
+}
+
+/** { current, best, today, goal }: days in a row you rated or voted, in this device's time zone. */
+export async function streak() {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  return unwrap(await db.rpc('my_streak', { p_tz: tz }));
 }
 
 export async function ratingStats(postId) {
