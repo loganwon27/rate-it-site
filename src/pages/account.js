@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import * as api from '../lib/api.js';
 import { describeError } from '../lib/backend.js';
-import { ago, SITE_URL } from '../lib/format.js';
+import { ago, APP_VERSION, SITE_URL } from '../lib/format.js';
 import { APPEARANCES, getAppearance, setAppearance } from '../lib/appearance.js';
 import { html } from '../lib/html.js';
 import { disablePush, enablePush, pushEnabled, pushSupport } from '../lib/push.js';
@@ -99,6 +99,7 @@ export function SettingsPage() {
       <button class="link-row" onClick=${() => setDialog('logout')}><span>Log out</span></button>
       <button class="link-row danger" onClick=${() => setDialog('delete')}><span>Delete account</span></button>
     </section>
+    <p class="muted small center app-version">Version: ${APP_VERSION}</p>
     ${dialog === 'blocked' ? html`<${BlockedUsers} onClose=${() => setDialog(null)} />` : null}
     ${dialog === 'logout' ? html`<${Confirm} title="Log out?" confirmLabel="Log out"
         onConfirm=${() => api.signOut()} onCancel=${() => setDialog(null)} />` : null}

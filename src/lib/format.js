@@ -13,6 +13,9 @@ export function ago(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+/** Shown at the bottom of Settings. Keep in step with MARKETING_VERSION in project.yml. */
+export const APP_VERSION = '0.21';
+
 export function plural(n, word) {
   return `${compact(n)} ${n === 1 ? word : `${word}s`}`;
 }

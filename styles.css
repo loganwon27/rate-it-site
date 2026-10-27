@@ -866,3 +866,4 @@ h1 .role-tag { font-size: 12px; padding: 2px 9px; vertical-align: 5px; margin-le
 .form label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
 .form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .tabbar a span { font-size: 10px; }
+.app-version { margin: 18px 0 8px; }
